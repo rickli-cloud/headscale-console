@@ -2,11 +2,6 @@
 
 Web based SSH console for `@juanfont/headscale`.
 
-## Features
-
-- **Tailscale web client based on WASM**: Directly connect to your tailnet from your browser (DERP only).
-- **SSH Console**: Manage nodes with Tailscale SSH enabled.
-
 ## Deploy
 
 > **Be aware:** The WASM client is only able to connect to other nodes over a DERP relay via a websocket. Depending on the setup this might not work correctly. Best results are achieved by using the embedded DERP server of headscale.

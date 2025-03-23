@@ -1,16 +1,7 @@
-import { createIPN } from "@tailscale/connect";
+// import { createIPN } from "@tailscale/connect";
 
 import { ipnStateStorage } from "$lib/store/tailscale";
 import { joinUrl } from "./misc";
-
-export interface createTailscaleClientOptions {
-  /** Used for loading main.wasm */
-  baseUrl?: string | URL | Location;
-  /** Tailscale control server URL */
-  controlUrl: string;
-  /** Optional authkey */
-  authkey?: string;
-}
 
 export async function createTailscaleClient(
   opt: createTailscaleClientOptions
@@ -86,4 +77,42 @@ export class NotifyPanicRecoverEvent extends Event {
     super(IpnEvents.panicRecover);
     this.err = err;
   }
+}
+
+// Copyright (c) Tailscale Inc & AUTHORS
+
+/**
+ * Superset of the IPNConfig type, with additional configuration that is
+ * needed for the package to function.
+ */
+type IPNPackageConfig = IPNConfig & {
+  // Auth key used to initialize the Tailscale client (required)
+  authKey: string;
+  // URL of the main.wasm file that is included in the page, if it is not
+  // accessible via a relative URL.
+  wasmURL: string;
+  // Function invoked if the Go process panics or unexpectedly exits.
+  panicHandler: (err: string) => void;
+};
+
+async function createIPN(config: IPNPackageConfig): Promise<IPN> {
+  // @ts-ignore
+  const go = new Go();
+  const wasmInstance = await WebAssembly.instantiateStreaming(
+    fetch(config.wasmURL),
+    go.importObject
+  );
+  go.run(wasmInstance.instance).then(() =>
+    config.panicHandler("Unexpected shutdown")
+  );
+  return newIPN(config);
+}
+
+interface createTailscaleClientOptions {
+  /** Used for loading main.wasm */
+  baseUrl?: string | URL | Location;
+  /** Tailscale control server URL */
+  controlUrl: string;
+  /** Optional authkey */
+  authkey?: string;
 }

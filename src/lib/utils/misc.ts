@@ -8,7 +8,15 @@ export function hex2a(hexx: string) {
 }
 
 export function joinUrl(base: URL | Location, path: string) {
-  return `${base.protocol}//${base.hostname}${base.port ? ":" : ""}${
-    base.port
-  }${base.pathname}${base.pathname.endsWith("/") ? "" : "/"}${path}`;
+  let str = "";
+
+  str = str + base.protocol;
+  str = str + "//";
+  str = str + base.hostname;
+  str = str + base.port.length ? ":" + base.port : "";
+  str = str + base.pathname;
+  str = str + base.pathname.endsWith("/") ? "" : "/";
+  str = str + path.replace(/^\//, "");
+
+  return str;
 }
