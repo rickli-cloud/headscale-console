@@ -55,7 +55,6 @@ export class XtermPanel implements IContentRenderer {
     this.terminal.loadAddon(this.webLinksAddon);
 
     this.terminal.onKey((ev) => {
-      console.debug("key", ev);
       switch (ev.key) {
         case "\u0002": // CTRL + b
           // Simulate key press on document

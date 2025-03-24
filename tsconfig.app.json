@@ -23,5 +23,6 @@
       // "$routes/*": ["./src/routes/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"]
+  "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],
+  "exclude": ["src/lib/api/tsconnect/pkg.*"]
 }

@@ -2,18 +2,19 @@
   import { type ComponentProps } from "svelte";
 
   import PanelLeft from "lucide-svelte/icons/panel-left";
+  import Terminal from "lucide-svelte/icons/terminal";
   import Server from "lucide-svelte/icons/server";
   import Cog from "lucide-svelte/icons/cog";
 
   import * as Sidebar from "$lib/components/ui/sidebar";
   import { useSidebar } from "$lib/components/ui/sidebar";
+  import Badge from "$lib/components/ui/badge/badge.svelte";
+
+  import { IpnEvents, NotifyNetMapEvent } from "$lib/api/tsconnect";
+  import type { Tailscale } from "$lib/types/tailscale.d";
+  import { cn } from "$lib/utils/shadcn";
 
   import NavUser from "./nav-user.svelte";
-  import { cn } from "$lib/utils/shadcn";
-  import { IpnEvents, NotifyNetMapEvent } from "$lib/utils/tailscale";
-  import type { Tailscale } from "$lib/types/tailscale.d";
-  import Badge from "../ui/badge/badge.svelte";
-  import Terminal from "lucide-svelte/icons/terminal";
 
   interface Props extends ComponentProps<typeof Sidebar.Root> {}
 

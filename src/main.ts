@@ -10,7 +10,7 @@ import {
   IpnEvents,
   NotifyBrowseToURLEvent,
   NotifyStateEvent,
-} from "$lib/utils/tailscale";
+} from "$lib/api/tsconnect";
 
 import "./app.css";
 import App from "./App.svelte";
@@ -44,6 +44,7 @@ declare global {
 
   window.ipn = await createTailscaleClient({
     controlUrl:
+      import.meta.env.VITE_DEV_HEADSCALE_HOST ||
       window.tailscaleProfile?.ControlURL ||
       new URL("/", window.location.toString()).toString(),
   });
@@ -52,8 +53,12 @@ declare global {
 
   window.ipnEventHandler.addEventListener(IpnEvents.browseToURL, (ev) => {
     if (!(ev instanceof NotifyBrowseToURLEvent)) return;
+    if (loadingScreen) {
+      unmount(loadingScreen);
+      loadingScreen = undefined;
+    }
     loginScreen = mount(LoginScreen, { target: appEl, props: { url: ev.url } });
-    window.open(ev.url, "_blank", "popup");
+    window.open(ev.url, "_blank");
   });
 
   window.ipnEventHandler.addEventListener(IpnEvents.state, async (ev) => {
