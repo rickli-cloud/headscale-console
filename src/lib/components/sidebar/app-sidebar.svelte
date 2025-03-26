@@ -75,14 +75,14 @@
             }}
           >
             {#snippet child({ props })}
-              <a href="##" {...props}>
+              <a {...props} class="cursor-pointer">
                 <div
                   class="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg"
                 >
                   <PanelLeft class="size-4" />
                 </div>
                 <div class="grid flex-1 text-left text-sm leading-tight">
-                  <span class="truncate font-semibold">Servers</span>
+                  <span class="truncate font-semibold"></span>
                   <span class="truncate text-xs"></span>
                 </div>
               </a>

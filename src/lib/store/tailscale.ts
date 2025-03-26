@@ -1,12 +1,11 @@
 import type { Tailscale } from "$lib/types/tailscale.d";
 import { hex2a } from "$lib/utils/misc";
-import { type IPNPackageConfig } from "@tailscale/connect";
 
 const statePrefix = "ipn-state-";
 const currentProfileKey = "_current-profile";
 const profileRegex = new RegExp(`^${statePrefix}profile-`, "i");
 
-export const ipnStateStorage: NonNullable<IPNPackageConfig["stateStorage"]> = {
+export const ipnStateStorage: NonNullable<IPNStateStorage> = {
   setState(id: string, value: string) {
     window.localStorage[statePrefix + id] = value;
   },

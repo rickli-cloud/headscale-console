@@ -49,12 +49,14 @@ jobs:
         with:
           deno-version: v2.x
 
-      # Required for version patching
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 22.x
-          registry-url: "https://registry.npmjs.org"
+      - uses: actions/setup-go@v5
+        # with:
+        #   go-version: ""
+
+      - name: Setup binaryen
+        run: |
+          sudo apt update
+          sudo apt install -y binaryen
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -73,7 +75,13 @@ jobs:
         run: deno install
 
       - name: Patch version
-        run: npm version 0.0.0-unstable --no-commit-hooks --no-git-tag-version
+        run: deno --allow-read="package.json" --allow-write="package.json" patch-version.js 0.0.0-unstable
+
+      - name: Build wasm
+        run: |
+          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./public/tailscale.wasm ./wasm/wasm.go
+          wasm-opt --enable-bulk-memory -Oz ./public/tailscale.wasm -o ./public/tailscale.wasm
+          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/wasm_exec.js
 
       - name: Build frontend
         run: deno task build

@@ -20,6 +20,15 @@ jobs:
         with:
           deno-version: v2.x
 
+      - uses: actions/setup-go@v5
+        # with:
+        #   go-version: ""
+
+      - name: Setup binaryen
+        run: |
+          sudo apt update
+          sudo apt install -y binaryen
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -38,6 +47,12 @@ jobs:
 
       - name: Patch version
         run: deno --allow-read="package.json" --allow-write="package.json" patch-version.js ${{ github.event.release.tag_name }}
+
+      - name: Build wasm
+        run: |
+          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./public/tailscale.wasm ./wasm/wasm.go
+          wasm-opt --enable-bulk-memory -Oz ./public/tailscale.wasm -o ./public/tailscale.wasm
+          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/wasm_exec.js
 
       - name: Build app
         run: deno task build

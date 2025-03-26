@@ -43,7 +43,8 @@ declare global {
     : undefined;
 
   window.ipn = await createTailscaleClient({
-    controlUrl:
+    panicHandler: console.error,
+    controlURL:
       import.meta.env.VITE_DEV_HEADSCALE_HOST ||
       window.tailscaleProfile?.ControlURL ||
       new URL("/", window.location.toString()).toString(),

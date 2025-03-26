@@ -164,6 +164,8 @@ export class XtermPanel implements IContentRenderer {
         this.sshSession = undefined;
         this._username = "";
 
+        this.terminal.write("Press any key to continue... ");
+
         const cleanupListener = this.terminal.onKey((ev) => {
           cleanupListener.dispose();
           this.terminal.clear();
