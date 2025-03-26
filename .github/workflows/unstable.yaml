@@ -81,7 +81,7 @@ jobs:
         run: |
           GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./public/tailscale.wasm ./wasm/wasm.go
           wasm-opt --enable-bulk-memory -Oz ./public/tailscale.wasm -o ./public/tailscale.wasm
-          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/wasm_exec.js
+          cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./src/lib/api/tsconnect/wasm_exec.js
 
       - name: Build frontend
         run: deno task build
