@@ -11,14 +11,13 @@
   import { WindowSystem } from "$lib/components/window";
 
   const beforeUnloadHandler = (event: Event) => {
+    if (!(window.dockView?.panels.length > 0)) return;
     event.preventDefault(); // Recommended
     event.returnValue = true; // Included for legacy support, e.g. Chrome/Edge < 119
   };
 
   onMount(() => {
-    if (!import.meta.env.DEV) {
-      window.addEventListener("beforeunload", beforeUnloadHandler);
-    }
+    window.addEventListener("beforeunload", beforeUnloadHandler);
 
     return () => {
       window.removeEventListener("beforeunload", beforeUnloadHandler);

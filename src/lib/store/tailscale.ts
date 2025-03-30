@@ -1,9 +1,14 @@
 import type { Tailscale } from "$lib/types/tailscale.d";
 import { hex2a } from "$lib/utils/misc";
+import { writable } from "svelte/store";
 
 const statePrefix = "ipn-state-";
 const currentProfileKey = "_current-profile";
 const profileRegex = new RegExp(`^${statePrefix}profile-`, "i");
+
+export const netMap = writable<Tailscale.NetMap | undefined>(undefined);
+
+netMap.subscribe((netMap) => console.debug("netMap:", netMap));
 
 export const ipnStateStorage: NonNullable<IPNStateStorage> = {
   setState(id: string, value: string) {

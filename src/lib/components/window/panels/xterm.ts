@@ -9,11 +9,15 @@ import {
 } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
+import { BasePanel } from "./base";
 
 interface XtermConstructorParameters extends ITerminalOptions {}
 
-export class XtermPanel implements IContentRenderer {
-  protected readonly _element: HTMLElement;
+export interface XtermPanelParams {
+  hostname: string;
+}
+
+export class XtermPanel extends BasePanel implements IContentRenderer {
   protected readonly terminal: Terminal;
   protected readonly fitAddon: FitAddon;
   protected readonly webLinksAddon: WebLinksAddon;
@@ -23,22 +27,18 @@ export class XtermPanel implements IContentRenderer {
 
   protected loginListener: IDisposable | undefined;
   protected sshSession: IPNSSHSession | undefined;
-  protected _hostname: string | undefined;
+  protected _hostname: string = "";
   protected _username: string = "";
 
-  get element(): HTMLElement {
-    return this._element;
-  }
   get username(): string {
     return this._username;
   }
-  get hostname(): string | undefined {
+  get hostname(): string {
     return this._hostname;
   }
 
   constructor(terminalOptions?: XtermConstructorParameters) {
-    this._element = document.createElement("div");
-    this.element.classList.add("h-full", "w-full");
+    super();
 
     this.terminal = new Terminal({
       cursorBlink: true,
@@ -70,9 +70,11 @@ export class XtermPanel implements IContentRenderer {
     });
   }
 
-  init({ params }: GroupPanelPartInitParameters): void {
-    if (!("hostname" in params)) {
-      throw new Error("Xterm panel params do not contain hostname");
+  public init({ params }: GroupPanelPartInitParameters): void {
+    const { hostname } = params as XtermPanelParams;
+
+    if (typeof hostname !== "string") {
+      throw new Error("Xterm panel params do not contain a valid hostname");
     }
 
     this._hostname = params.hostname;
@@ -83,6 +85,15 @@ export class XtermPanel implements IContentRenderer {
     this.terminal.focus();
 
     this.attachLoginListener();
+  }
+
+  public dispose(): void {
+    this.sshSession?.close();
+    this.loginListener?.dispose();
+    this.terminal.dispose();
+    this.fitAddon.dispose();
+    this.webLinksAddon.dispose();
+    this.resizeObserver.disconnect();
   }
 
   private attachLoginListener() {

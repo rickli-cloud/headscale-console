@@ -2,49 +2,24 @@
   import { type ComponentProps } from "svelte";
 
   import PanelLeft from "lucide-svelte/icons/panel-left";
-  import Terminal from "lucide-svelte/icons/terminal";
   import Server from "lucide-svelte/icons/server";
   import Cog from "lucide-svelte/icons/cog";
 
+  import * as Collapsible from "$lib/components/ui/collapsible";
   import * as Sidebar from "$lib/components/ui/sidebar";
   import { useSidebar } from "$lib/components/ui/sidebar";
-  import Badge from "$lib/components/ui/badge/badge.svelte";
 
-  import { IpnEvents, NotifyNetMapEvent } from "$lib/api/tsconnect";
-  import type { Tailscale } from "$lib/types/tailscale.d";
   import { cn } from "$lib/utils/shadcn";
 
   import NavUser from "./nav-user.svelte";
+  import ChevronRight from "lucide-svelte/icons/chevron-right";
+  import NodeMap from "../data/node/NodeMap.svelte";
 
   interface Props extends ComponentProps<typeof Sidebar.Root> {}
 
   let { ref = $bindable(null), ...restProps }: Props = $props();
 
-  let activeItem = $state<"nodes" | "sessions" | "settings">("nodes");
-  let netMap = $state<Tailscale.NetMap | undefined>();
-
   const sidebar = useSidebar();
-
-  window.ipnEventHandler.addEventListener(IpnEvents.netMap, (ev) => {
-    if (!(ev instanceof NotifyNetMapEvent)) {
-      throw new Error(
-        `Event payload for ${IpnEvents.netMap} is not instance of NotifyNetMapEvent`
-      );
-    }
-
-    if (!ev.netMapStr) return;
-
-    netMap = JSON.parse(ev.netMapStr);
-  });
-
-  /** Get peers with taiscale ssh enabled first */
-  function sortPeers(peers: Tailscale.Peer[] | undefined): Tailscale.Peer[] {
-    if (!peers) return [];
-    return [
-      ...peers.filter((peer) => peer.tailscaleSSHEnabled),
-      ...peers.filter((peer) => !peer.tailscaleSSHEnabled),
-    ];
-  }
 </script>
 
 <Sidebar.Root
@@ -101,14 +76,8 @@
                 tooltipContentProps={{
                   hidden: false,
                 }}
-                onclick={() => {
-                  if (activeItem === "nodes") sidebar.toggle();
-                  else {
-                    activeItem = "nodes";
-                    sidebar.setOpen(true);
-                  }
-                }}
-                isActive={activeItem === "nodes"}
+                onclick={() => sidebar.toggle()}
+                isActive={true}
                 class="px-2.5 md:px-2"
               >
                 {#snippet tooltipContent()}
@@ -147,14 +116,8 @@
                 tooltipContentProps={{
                   hidden: false,
                 }}
-                onclick={() => {
-                  if (activeItem === "settings") sidebar.toggle();
-                  else {
-                    activeItem = "settings";
-                    sidebar.setOpen(true);
-                  }
-                }}
-                isActive={activeItem === "settings"}
+                onclick={() => {}}
+                isActive={false}
                 class="px-2.5 md:px-2"
                 aria-disabled={true}
               >
@@ -178,123 +141,47 @@
     collapsible="none"
     class="flex-1 flex md:w-[calc(var(--sidebar-width)-49px)]"
   >
-    <Sidebar.Header class="gap-3.5 border-b p-4">
+    <!-- <Sidebar.Header class="gap-3.5 border-b p-4">
       <div class="flex w-full items-center justify-between">
         <div class="text-foreground text-base font-medium capitalize">
           {activeItem}
         </div>
 
-        <!-- <Label class="flex items-center gap-2 text-sm">
+        <-- <Label class="flex items-center gap-2 text-sm">
           <span>Unreads</span>
           <Switch class="shadow-none" />
-        </Label> -->
+        </Label> --
       </div>
 
-      <!-- <Sidebar.Input placeholder="Type to search..." /> -->
-    </Sidebar.Header>
+      <-- <Sidebar.Input placeholder="Type to search..." /> --
+    </Sidebar.Header> -->
 
     <Sidebar.Content>
       <Sidebar.Group class="px-0">
-        <Sidebar.GroupContent class="overflow-hidden">
-          {#if activeItem === "nodes"}
-            <!-- <div>
-              <pre><code>{JSON.stringify(netMap, null, 2)}</code></pre>
-            </div> -->
-            {#each sortPeers(netMap?.peers) as peer}
-              <button
-                class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 w-full"
-                class:cursor-not-allowed={!peer.tailscaleSSHEnabled}
-                disabled={!peer.tailscaleSSHEnabled}
-                onclick={() => {
-                  window.dockView.addPanel({
-                    component: "xterm",
-                    id: window.crypto.randomUUID(),
-                    title: peer.name,
-                    params: {
-                      hostname: peer.name,
-                    },
-                  });
-                  /* window.dockView.addPanel({
-                    component: "node",
-                    id: window.crypto.randomUUID(),
-                    title: peer.name,
-                    params: {
-                      peer,
-                    },
-                  }); */
-                }}
-              >
-                <h3
-                  class="max-w-full overflow-hidden text-ellipsis font-semibold text-sm flex gap-1.5 items-center"
-                >
-                  <div
-                    class="h-2.5 w-2.5 rounded-full"
-                    class:bg-green-600={peer.online}
-                    class:bg-red-600={!peer.online}
-                  ></div>
-                  {peer.name}
-                </h3>
+        <Collapsible.Root open class="group/collapsible">
+          <Sidebar.GroupLabel
+            class="group/label text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground w-[calc(100%-1rem)] text-sm mx-2"
+          >
+            {#snippet child({ props })}
+              <Collapsible.Trigger {...props}>
+                <span class="font-semibold"> Nodes </span>
+                <ChevronRight
+                  class="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90"
+                />
+              </Collapsible.Trigger>
+            {/snippet}
+          </Sidebar.GroupLabel>
 
-                <ul class="text-left list-disc pl-3.5">
-                  {#each peer.addresses as addr}
-                    <li>{addr}</li>
-                  {/each}
-                </ul>
+          <Collapsible.Content>
+            <Sidebar.GroupContent>
+              <NodeMap />
+            </Sidebar.GroupContent>
+          </Collapsible.Content>
+        </Collapsible.Root>
+      </Sidebar.Group>
 
-                {#if peer.tailscaleSSHEnabled}
-                  <div class="flex gap-1.5 items-center mt-1.5">
-                    <Badge class="flex gap-1 items-center">
-                      <Terminal class="h-2.5 w-2.5" />
-                      SSH
-                    </Badge>
-                  </div>
-                {/if}
-              </button>
-            {/each}
-
-            {#if netMap?.self}
-              <button
-                class="hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap border-b p-4 text-sm leading-tight last:border-b-0 w-full cursor-not-allowed"
-              >
-                <h3
-                  class="max-w-full overflow-hidden text-ellipsis font-semibold text-sm flex gap-1.5 items-center"
-                >
-                  <div
-                    class="h-2.5 w-2.5 rounded-full"
-                    class:bg-green-600={netMap.self.machineStatus ===
-                      "MachineAuthorized"}
-                    class:bg-red-600={netMap.self.machineStatus !==
-                      "MachineAuthorized"}
-                  ></div>
-                  {netMap.self.name}
-                </h3>
-
-                <ul class="text-left list-disc pl-3.5">
-                  {#each netMap.self.addresses as addr}
-                    <li>{addr}</li>
-                  {/each}
-                </ul>
-
-                <div class="flex gap-1.5 items-center mt-1.5">
-                  {#if netMap.self.machineStatus !== "MachineAuthorized"}
-                    <Badge variant="destructive">
-                      {netMap.self.machineStatus}
-                    </Badge>
-                  {/if}
-                  <Badge variant="secondary">Self</Badge>
-                </div>
-              </button>
-            {/if}
-            <!-- {:else if activeItem === "sessions"}
-            {#each window.dockView.panels || [] as panel}
-              {#if panel.view.content instanceof XtermPanel}
-                <div>{panel.id}</div>
-              {/if}
-            {/each} -->
-          {:else if activeItem === "settings"}
-            <div>3</div>
-          {/if}
-        </Sidebar.GroupContent>
+      <Sidebar.Group>
+        <Sidebar.GroupContent class="overflow-hidden"></Sidebar.GroupContent>
       </Sidebar.Group>
 
       <Sidebar.Group class="mt-auto pt-4 md:hidden">

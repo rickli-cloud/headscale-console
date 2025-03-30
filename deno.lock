@@ -2,6 +2,7 @@
   "version": "4",
   "specifiers": {
     "npm:@lucide/svelte@0.483": "0.483.0_svelte@5.22.6__acorn@8.14.1",
+    "npm:@novnc/novnc@1.5.0": "1.5.0",
     "npm:@sveltejs/vite-plugin-svelte@^5.0.3": "5.0.3_svelte@5.22.6__acorn@8.14.1_vite@6.2.1__@types+node@22.13.10_@types+node@22.13.10",
     "npm:@tsconfig/svelte@^5.0.4": "5.0.4",
     "npm:@types/golang-wasm-exec@^1.15.2": "1.15.2",
@@ -198,6 +199,9 @@
         "@nodelib/fs.scandir",
         "fastq"
       ]
+    },
+    "@novnc/novnc@1.5.0": {
+      "integrity": "sha512-4yGHOtUCnEJUCsgEt/L78eeJu00kthurLBWXFiaXfonNx0pzbs6R/3gJb1byZe6iAE8V9MF0syQb0xIL8MSOtQ=="
     },
     "@pkgjs/parseargs@0.11.0": {
       "integrity": "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="
@@ -1215,6 +1219,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@lucide/svelte@0.483",
+        "npm:@novnc/novnc@1.5.0",
         "npm:@sveltejs/vite-plugin-svelte@^5.0.3",
         "npm:@tsconfig/svelte@^5.0.4",
         "npm:@types/golang-wasm-exec@^1.15.2",

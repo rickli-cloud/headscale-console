@@ -2,13 +2,14 @@ import { mount, unmount } from "svelte";
 import type { DockviewApi } from "dockview-core";
 import { ModeWatcher } from "mode-watcher";
 
-import { loadTailscaleProfiles } from "$lib/store/tailscale";
+import { loadTailscaleProfiles, netMap } from "$lib/store/tailscale";
 import type { Tailscale } from "$lib/types/tailscale";
 import {
   createTailscaleClient,
   IpnEventHandler,
   IpnEvents,
   NotifyBrowseToURLEvent,
+  NotifyNetMapEvent,
   NotifyStateEvent,
 } from "$lib/api/tsconnect";
 
@@ -100,6 +101,15 @@ declare global {
         }
         break;
     }
+
+    window.ipnEventHandler.addEventListener(IpnEvents.netMap, (ev) => {
+      if (!(ev instanceof NotifyNetMapEvent)) {
+        throw new Error(
+          `Event payload for "${IpnEvents.netMap}" is not instance of NotifyNetMapEvent`
+        );
+      }
+      if (ev.netMapStr) netMap.set(JSON.parse(ev.netMapStr));
+    });
   });
 
   window.ipn.run(window.ipnEventHandler);

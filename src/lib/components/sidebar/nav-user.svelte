@@ -8,6 +8,7 @@
   import { useSidebar } from "$lib/components/ui/sidebar";
 
   import LogoutDialog from "./logout-dialog.svelte";
+  import Cog from "lucide-svelte/icons/cog";
 
   const sidebar = useSidebar();
 
@@ -53,6 +54,7 @@
           </Sidebar.MenuButton>
         {/snippet}
       </DropdownMenu.Trigger>
+
       <DropdownMenu.Content
         class="w-[--bits-dropdown-menu-anchor-width] min-w-56 rounded-lg"
         side={sidebar.isMobile ? "bottom" : "right"}
@@ -84,13 +86,20 @@
 
         <DropdownMenu.Separator />
 
-        <DropdownMenu.Item
-          onclick={() => logoutDialog.open()}
-          class="cursor-pointer"
-        >
-          <LogOut />
-          Log out
-        </DropdownMenu.Item>
+        <DropdownMenu.Group>
+          <DropdownMenu.Item onclick={() => {}} class="cursor-pointer" disabled>
+            <Cog />
+            Settings
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item
+            onclick={() => logoutDialog.open()}
+            class="cursor-pointer"
+          >
+            <LogOut />
+            Log out
+          </DropdownMenu.Item>
+        </DropdownMenu.Group>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </Sidebar.MenuItem>

@@ -7,23 +7,19 @@ import { mount } from "svelte";
 
 import { MonacoEditor } from "$lib/components/monaco";
 
-export class MonacoPanel implements IContentRenderer {
-  protected readonly _element: HTMLElement;
+import { BasePanel } from "./base";
+
+export class MonacoPanel extends BasePanel implements IContentRenderer {
   protected readonly _editor: monaco.editor.IStandaloneCodeEditor | undefined;
   protected readonly _model: monaco.editor.ITextModel;
 
-  get element(): HTMLElement {
-    return this._element;
-  }
-
   constructor(lang: string) {
-    this._element = document.createElement("div");
-    this.element.classList.add("h-full", "w-full", "py-3");
+    super();
 
     this._model = monaco.editor.createModel("{}", lang);
   }
 
-  init(parameters: GroupPanelPartInitParameters): void {
+  public init({}: GroupPanelPartInitParameters): void {
     mount(MonacoEditor, {
       target: this.element,
       props: {
@@ -31,5 +27,10 @@ export class MonacoPanel implements IContentRenderer {
         onready: (editor) => editor.setModel(this._model),
       },
     });
+  }
+
+  public dispose(): void {
+    this._editor?.dispose();
+    this._model.dispose();
   }
 }

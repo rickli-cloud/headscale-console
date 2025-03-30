@@ -1,8 +1,10 @@
 # Headscale Console
 
-Web based SSH console for `@juanfont/headscale`.
+Web based SSH & VNC console for `@juanfont/headscale`.
 
 ## Deploy
+
+Because of CORS restrictions and the current lack of a configuration system, the application must share the same domain as Headscale, typically via a reverse proxy.
 
 > **Be aware:** The WASM client is only able to connect to other nodes over a DERP relay via a websocket. Depending on the setup this might not work correctly. Best results are achieved by using the embedded DERP server of headscale.
 
@@ -31,7 +33,7 @@ You can download a zip archive for each release containing almost everything nee
 
 ## Development
 
-> The official Tailscale WASM client `@tailscale/connect` is unfortunately not really maintained and on a too old client version to connect to a current headscale instance. Therefore it has to be replaced by a newer manual build located in the public folder.
+> The WASM client needs to be built manually. See [`./wasm`](https://github.com/rickli-cloud/headscale-console/tree/main/wasm)
 
 Install Dependencies:
 
@@ -47,14 +49,18 @@ deno task dev
 
 ## Building
 
+### WASM Client
+
+See [`./wasm`](https://github.com/rickli-cloud/headscale-console/tree/main/wasm) on how to manually build the WASM client or study `.github/workflows` for automated builds.
+
+### Svelte app
+
 > [!TIP]  
 > This can be done in Docker:
 >
 > ```sh
 > docker run -it --rm --workdir /app -v ${PWD}:/app:rw --entrypoint /bin/sh denoland/deno:latest
 > ```
-
-### Svelte app
 
 Install Dependencies:
 

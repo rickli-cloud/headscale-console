@@ -41,7 +41,7 @@
         );
   }
 
-  onMount(() => {
+  onMount(async () => {
     sidebarEl = document.getElementById("app-sidebar");
     if (sidebarEl) sidebarObserver.observe(sidebarEl);
     else {
