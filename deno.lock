@@ -7,6 +7,7 @@
     "npm:@tsconfig/svelte@^5.0.4": "5.0.4",
     "npm:@types/golang-wasm-exec@^1.15.2": "1.15.2",
     "npm:@types/node@^22.13.5": "22.13.10",
+    "npm:@types/novnc__novnc@^1.5.0": "1.5.0",
     "npm:@xterm/addon-fit@0.10": "0.10.0_@xterm+xterm@5.5.0",
     "npm:@xterm/addon-web-links@0.11": "0.11.0_@xterm+xterm@5.5.0",
     "npm:@xterm/xterm@^5.5.0": "5.5.0",
@@ -311,6 +312,9 @@
       "dependencies": [
         "undici-types"
       ]
+    },
+    "@types/novnc__novnc@1.5.0": {
+      "integrity": "sha512-9DrDJK1hUT6Cbp4t03IsU/DsR6ndnIrDgZVrzITvspldHQ7n81F3wUDfq89zmPM3wg4GErH11IQa0QuTgLMf+w=="
     },
     "@xterm/addon-fit@0.10.0_@xterm+xterm@5.5.0": {
       "integrity": "sha512-UFYkDm4HUahf2lnEyHvio51TNGiLK66mqP2JoATy7hRZeXaGMRDr00JiSF7m63vR5WKATF605yEggJKsw0JpMQ==",
@@ -1224,6 +1228,7 @@
         "npm:@tsconfig/svelte@^5.0.4",
         "npm:@types/golang-wasm-exec@^1.15.2",
         "npm:@types/node@^22.13.5",
+        "npm:@types/novnc__novnc@^1.5.0",
         "npm:@xterm/addon-fit@0.10",
         "npm:@xterm/addon-web-links@0.11",
         "npm:@xterm/xterm@^5.5.0",
