@@ -6,7 +6,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  build-golang:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -14,6 +14,91 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Setup Golang
+        uses: actions/setup-go@v5
+        # with:
+        #   go-version: ""
+
+      - name: Setup binaryen
+        run: |
+          sudo apt update
+          sudo apt install -y binaryen
+
+      - name: Build Golang WASM
+        run: |
+          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./public/tailscale.wasm ./wasm/wasm.go
+          wasm-opt --enable-bulk-memory -Oz ./public/tailscale.wasm -o ./public/tailscale.wasm
+          cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./src/lib/api/tsconnect/wasm_exec.js
+
+      - name: Upload golang wasm
+        uses: actions/upload-artifact@v4
+        with:
+          name: golang-wasm
+          path: public/tailscale.wasm
+
+      - name: Upload golang wasm exec
+        uses: actions/upload-artifact@v4
+        with:
+          name: golang-wasm-exec
+          path: src/lib/api/tsconnect/wasm_exec.js
+
+  build-rust:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup rust
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          . "$HOME/.cargo/env"
+
+      - name: Setup wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build Rust WASM
+        working-directory: wasm
+        run: wasm-pack build --out-name ironrdp --target web
+
+      - name: Upload rust wasm package
+        uses: actions/upload-artifact@v4
+        with:
+          name: rust-wasm-pkg
+          path: wasm/pkg/
+
+  test:
+    needs:
+      - build-golang
+      - build-wasm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download golang wasm
+        uses: actions/download-artifact@v4
+        with:
+          name: golang-wasm
+          path: public/tailscale.wasm
+
+      - name: Download golang wasm exec
+        uses: actions/download-artifact@v4
+        with:
+          name: golang-wasm-exec
+          path: src/lib/api/tsconnect/wasm_exec.js
+
+      - name: Download rust wasm package
+        uses: actions/download-artifact@v4
+        with:
+          name: rust-wasm-pkg
+          path: wasm/pkg/
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -44,27 +129,59 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Download golang wasm
+        uses: actions/download-artifact@v4
+        with:
+          name: golang-wasm
+          path: public/tailscale.wasm
+
+      - name: Download golang wasm exec
+        uses: actions/download-artifact@v4
+        with:
+          name: golang-wasm-exec
+          path: src/lib/api/tsconnect/wasm_exec.js
+
+      - name: Download rust wasm package
+        uses: actions/download-artifact@v4
+        with:
+          name: rust-wasm-pkg
+          path: wasm/pkg/
+
       - name: Setup deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
 
-      - uses: actions/setup-go@v5
-        # with:
-        #   go-version: ""
+      - name: Install dependencies
+        run: deno install
 
-      - name: Setup binaryen
-        run: |
-          sudo apt update
-          sudo apt install -y binaryen
+      - name: Patch version
+        run: deno --allow-read="package.json" --allow-write="package.json" patch-version.js 0.0.0-unstable
 
-      - name: Setup rust
-        run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
-          . "$HOME/.cargo/env"
+      - name: Build frontend
+        run: deno task build
 
-      - name: Setup wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+      - name: Upload app package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Download app package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -79,26 +196,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install dependencies
-        run: deno install
-
-      - name: Patch version
-        run: deno --allow-read="package.json" --allow-write="package.json" patch-version.js 0.0.0-unstable
-
-      - name: Build Rust WASM
-        working-directory: wasm
-        run: wasm-pack build --out-name ironrdp --target web
-
-      - name: Build Golang WASM
-        run: |
-          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./public/tailscale.wasm ./wasm/wasm.go
-          wasm-opt --enable-bulk-memory -Oz ./public/tailscale.wasm -o ./public/tailscale.wasm
-          cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./src/lib/api/tsconnect/wasm_exec.js
-
-      - name: Build frontend
-        run: deno task build
-
-      - name: Build latest docker image
+      - name: Build and publish latest docker image
         uses: docker/build-push-action@v5
         with:
           context: .
