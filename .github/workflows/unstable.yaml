@@ -73,7 +73,7 @@ jobs:
   test:
     needs:
       - build-golang
-      - build-wasm
+      - build-rust
     runs-on: ubuntu-latest
     permissions:
       contents: read
