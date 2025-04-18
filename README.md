@@ -1,47 +1,54 @@
 # Headscale Console
 
-Web based SSH & VNC console for `@juanfont/headscale`.
+A web-based SSH, VNC, and RDP client interface for [`@juanfont/headscale`](https://github.com/juanfont/headscale).  
+Connect to your nodes directly from the browser using WebAssembly.
 
-## Deploy
+## Features
 
-Because of CORS restrictions and the current lack of a configuration system, the application must share the same domain as Headscale, typically via a reverse proxy.
+- **SSH Console**: Secure terminal access to your nodes.
+- **VNC Viewer**: View remote desktops from the browser.
+- **RDP Client**: Experimental support for Remote Desktop via WebAssembly, ideal for connecting to Windows nodes—no additional server required.
 
-> **Be aware:** The WASM client is only able to connect to other nodes over a DERP relay via a websocket. Depending on the setup this might not work correctly. Best results are achieved by using the embedded DERP server of headscale.
+## Deployment
+
+Due to browser CORS restrictions and the absence of a full configuration system, the console must be served from the **same domain** as Headscale — usually via a reverse proxy setup.
+
+The WASM client is only able to connect to other nodes over a DERP relay via a websocket. Depending on the setup this might not work correctly. Best results are achieved by using the embedded DERP server of headscale.
 
 ### Docker
 
-Docker image built from scratch with a [basic golang webserver](https://github.com/rickli-cloud/headscale-console/blob/main/server.go).
+A minimal Docker image is available, featuring a [simple Go web server](https://github.com/rickli-cloud/headscale-console/blob/main/server.go) to serve the static files.
 
-#### Tags
+#### Image Tags
 
 - `latest`: Latest stable release
 - `x.x.x`: Specific release versions
 - `x.x.x-pre`: Pre-release versions (potentially unstable)
 - `unstable`: Built on every push to the main branch
 
-#### Basic example
+#### Example Usage
 
 ```sh
 docker run -it -p 3000:3000 ghcr.io/rickli-cloud/headscale-console:latest --base="/admin"
 ```
 
-### Static server
+### Static Hosting
 
 > Everything gets loaded relative to the initial url. It does not matter on what path you serve the app.
 
-You can download a zip archive for each release containing almost everything needed to deploy on a static webserver like Nginx or Apache.
+Each release includes a downloadable ZIP archive with all required assets for deployment on static web servers (e.g., Nginx, Apache).
 
 ## Development
 
-> The WASM client needs to be built manually. See [`./wasm`](https://github.com/rickli-cloud/headscale-console/tree/main/wasm)
+> The WASM client must be built manually. See [`./wasm`](https://github.com/rickli-cloud/headscale-console/tree/main/wasm) for details.
 
-Install Dependencies:
+Install dependencies:
 
 ```sh
 deno install
 ```
 
-Start Development Server:
+Start the development server:
 
 ```sh
 deno task dev
@@ -51,30 +58,31 @@ deno task dev
 
 ### WASM Client
 
-See [`./wasm`](https://github.com/rickli-cloud/headscale-console/tree/main/wasm) on how to manually build the WASM client or study `.github/workflows` for automated builds.
+Manual build instructions are available in the [`./wasm`](https://github.com/rickli-cloud/headscale-console/tree/main/wasm) directory.  
+Refer to the GitHub Actions workflows for the automated build process.
 
-### Svelte app
+### Svelte App
 
 > [!TIP]  
-> This can be done in Docker:
+> You can also build the app inside a Docker container:
 >
 > ```sh
 > docker run -it --rm --workdir /app -v ${PWD}:/app:rw --entrypoint /bin/sh denoland/deno:latest
 > ```
 
-Install Dependencies:
+Install dependencies:
 
 ```sh
 deno install
 ```
 
-Build the app:
+Build the Svelte frontend:
 
 ```sh
 deno task build
 ```
 
-### Docker image
+### Docker Image
 
 > The docker image does not build the svelte app, only bundles the static files into a small server.
 > Make sure to build the app in advance.

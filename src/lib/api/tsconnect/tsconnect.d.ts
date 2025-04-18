@@ -62,6 +62,7 @@ declare global {
     authKey?: string;
     controlURL?: string;
     hostname?: string;
+    routeAll?: boolean;
   };
 
   type IPNCallbacks = {

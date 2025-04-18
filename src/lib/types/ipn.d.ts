@@ -1,7 +1,7 @@
 export {};
 
 /** Generated types. Might not be 100% correct */
-export namespace Tailscale {
+export namespace Ipn {
   // Profile
   export interface Profile {
     ControlURL: string;
@@ -56,7 +56,6 @@ export namespace Tailscale {
     DisplayName: string;
   }
 
-  // NetMap
   export interface NetMap {
     self: Self;
     peers: Peer[];

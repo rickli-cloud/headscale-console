@@ -36,18 +36,18 @@
               <!-- <Avatar.Image src={ user.avatar} alt={user.name} /> -->
               <Avatar.Fallback class="rounded-lg"
                 >{shortName(
-                  window.tailscaleProfile?.Config.UserProfile.DisplayName ||
-                    window.tailscaleProfile?.Config.UserProfile.LoginName ||
-                    String(window.tailscaleProfile?.Config.UserProfile.ID)
+                  window.ipnProfile?.Config.UserProfile.DisplayName ||
+                    window.ipnProfile?.Config.UserProfile.LoginName ||
+                    String(window.ipnProfile?.Config.UserProfile.ID)
                 )}</Avatar.Fallback
               >
             </Avatar.Root>
             <div class="grid flex-1 text-left text-sm leading-tight">
               <span class="truncate font-semibold"
-                >{window.tailscaleProfile?.Config.UserProfile.DisplayName}</span
+                >{window.ipnProfile?.Config.UserProfile.DisplayName}</span
               >
               <span class="truncate text-xs"
-                >{window.tailscaleProfile?.Config.UserProfile.LoginName}</span
+                >{window.ipnProfile?.Config.UserProfile.LoginName}</span
               >
             </div>
             <ChevronsUpDown class="ml-auto size-4" />
@@ -67,18 +67,18 @@
               <!-- <Avatar.Image src={user.avatar} alt={user.name} /> -->
               <Avatar.Fallback class="rounded-lg"
                 >{shortName(
-                  window.tailscaleProfile?.Config.UserProfile.DisplayName ||
-                    window.tailscaleProfile?.Config.UserProfile.LoginName ||
-                    window.tailscaleProfile?.Config.UserProfile.ID
+                  window.ipnProfile?.Config.UserProfile.DisplayName ||
+                    window.ipnProfile?.Config.UserProfile.LoginName ||
+                    window.ipnProfile?.Config.UserProfile.ID
                 )}</Avatar.Fallback
               >
             </Avatar.Root>
             <div class="grid flex-1 text-left text-sm leading-tight">
               <span class="truncate font-semibold"
-                >{window.tailscaleProfile?.Config.UserProfile.DisplayName}</span
+                >{window.ipnProfile?.Config.UserProfile.DisplayName}</span
               >
               <span class="truncate text-xs"
-                >{window.tailscaleProfile?.Config.UserProfile.LoginName}</span
+                >{window.ipnProfile?.Config.UserProfile.LoginName}</span
               >
             </div>
           </div>

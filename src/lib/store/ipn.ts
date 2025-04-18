@@ -1,30 +1,33 @@
-import type { Tailscale } from "$lib/types/tailscale.d";
-import { hex2a } from "$lib/utils/misc";
 import { writable } from "svelte/store";
+
+import type { Ipn } from "$lib/types/ipn.d";
+import { hex2a } from "$lib/utils/misc";
 
 const statePrefix = "ipn-state-";
 const currentProfileKey = "_current-profile";
 const profileRegex = new RegExp(`^${statePrefix}profile-`, "i");
 
-export const netMap = writable<Tailscale.NetMap | undefined>(undefined);
+export const netMap = writable<Ipn.NetMap | undefined>(undefined);
 
 netMap.subscribe((netMap) => console.debug("netMap:", netMap));
 
-export const ipnStateStorage: NonNullable<IPNStateStorage> = {
-  setState(id: string, value: string) {
+export class IpnStateStorage {
+  public static setState(id: string, value: string) {
     window.localStorage[statePrefix + id] = value;
-  },
-  getState(id: string): string {
-    return window.localStorage[statePrefix + id] || "";
-  },
-};
+  }
 
-export function loadTailscaleProfiles(): {
+  public static getState(id: string): string {
+    return window.localStorage[statePrefix + id] || "";
+  }
+}
+
+export function loadIpnProfiles(): {
   current?: string;
-  profiles: { [profile: string]: Tailscale.Profile };
+  profiles: { [profile: string]: Ipn.Profile };
 } {
-  const profiles: { [profile: string]: Tailscale.Profile } = {};
-  let current: string | undefined = ipnStateStorage.getState(currentProfileKey);
+  const profiles: { [profile: string]: Ipn.Profile } = {};
+
+  let current: string | undefined = IpnStateStorage.getState(currentProfileKey);
   current = current.length ? hex2a(current) : undefined;
 
   if (current?.length) {

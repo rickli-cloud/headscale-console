@@ -16,12 +16,13 @@
   import { type XtermPanelParams } from "$lib/components/window/panels/xterm";
   import { type NoVNCPanelParams } from "$lib/components/window/panels/novnc";
   import { BasePanel } from "$lib/components/window/panels/base";
-  import type { Tailscale } from "$lib/types/tailscale";
+  import type { Ipn } from "$lib/types/ipn.d";
   import { cn } from "$lib/utils/shadcn";
   import Time from "$lib/components/utils/Time.svelte";
+  import type { IronRdpPanelParams } from "$lib/components/window/panels/ironrdp";
 
   interface Props {
-    peer: Tailscale.Peer & { machineStatus?: string };
+    peer: Ipn.Peer & { machineStatus?: string };
     onexpand?: () => void;
     isExpanded?: boolean;
   }
@@ -81,6 +82,20 @@
       params,
     });
   }
+
+  function openRdpPanel() {
+    const params: IronRdpPanelParams = {
+      hostname: peer.name,
+      port: 3389,
+    };
+
+    window.dockView.addPanel({
+      id: window.crypto.randomUUID(),
+      title: parseName(peer.name),
+      component: "ironrdp",
+      params,
+    });
+  }
 </script>
 
 <div class="border-b space-y-2 last:border-b-0">
@@ -134,7 +149,7 @@
           <DropdownMenu.Item
             class="text-xs cursor-pointer"
             disabled={self || !peer.online || !peer.tailscaleSSHEnabled}
-            onclick={() => openSshPanel()}
+            onclick={openSshPanel}
           >
             <Terminal class="mr-2 size-3" />
             New SSH Session
@@ -143,10 +158,19 @@
           <DropdownMenu.Item
             class="text-xs cursor-pointer"
             disabled={self || !peer.online}
-            onclick={() => openVncPanel()}
+            onclick={openVncPanel}
           >
             <ScreenShare class="mr-2 size-3" />
             New VNC Session
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item
+            class="text-xs cursor-pointer"
+            disabled={self || !peer.online}
+            onclick={openRdpPanel}
+          >
+            <ScreenShare class="mr-2 size-3" />
+            New RDP Session
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
@@ -218,6 +242,11 @@
                 <p class="flex gap-1.5 items-center text-xs">
                   <ScreenShare class="size-3" />
                   VNC
+                </p>
+              {:else if panel.api.component === "ironrdp"}
+                <p class="flex gap-1.5 items-center text-xs">
+                  <ScreenShare class="size-3" />
+                  RDP
                 </p>
               {/if}
 

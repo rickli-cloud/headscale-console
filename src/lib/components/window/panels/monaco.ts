@@ -1,9 +1,9 @@
+import * as monaco from "monaco-editor";
+import { mount } from "svelte";
 import type {
   GroupPanelPartInitParameters,
   IContentRenderer,
 } from "dockview-core";
-import * as monaco from "monaco-editor";
-import { mount } from "svelte";
 
 import { MonacoEditor } from "$lib/components/monaco";
 

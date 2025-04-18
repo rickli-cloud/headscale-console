@@ -29,6 +29,14 @@ jobs:
           sudo apt update
           sudo apt install -y binaryen
 
+      - name: Setup rust
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          . "$HOME/.cargo/env"
+
+      - name: Setup wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -48,7 +56,11 @@ jobs:
       - name: Patch version
         run: deno --allow-read="package.json" --allow-write="package.json" patch-version.js ${{ github.event.release.tag_name }}
 
-      - name: Build wasm
+      - name: Build Rust WASM
+        working-directory: wasm
+        run: wasm-pack build --out-name ironrdp --target web
+
+      - name: Build Golang WASM
         run: |
           GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./public/tailscale.wasm ./wasm/wasm.go
           wasm-opt --enable-bulk-memory -Oz ./public/tailscale.wasm -o ./public/tailscale.wasm

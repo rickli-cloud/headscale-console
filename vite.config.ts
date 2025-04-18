@@ -14,6 +14,7 @@ export default defineConfig({
   resolve: {
     alias: {
       $lib: resolve(__dirname, "src/lib"),
+      $pkg: resolve(__dirname, "wasm/pkg"),
     },
   },
 });

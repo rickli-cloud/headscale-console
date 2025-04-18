@@ -1,12 +1,12 @@
 <script lang="ts">
-  import type { Tailscale } from "$lib/types/tailscale.d";
-  import { netMap } from "$lib/store/tailscale";
+  import type { Ipn } from "$lib/types/ipn.d";
+  import { netMap } from "$lib/store/ipn";
 
   import NodeMapItem from "./node-map-item.svelte";
 
   let expandedPeer = $state<string | null>(null);
 
-  function sortPeers(peers: Tailscale.Peer[]): Tailscale.Peer[] {
+  function sortPeers(peers: Ipn.Peer[]): Ipn.Peer[] {
     peers = [
       ...(peers?.filter((peer) => peer.tailscaleSSHEnabled) || []),
       ...(peers?.filter((peer) => !peer.tailscaleSSHEnabled) || []),

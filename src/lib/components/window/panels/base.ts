@@ -11,6 +11,6 @@ export class BasePanel implements Partial<IContentRenderer> {
 
   constructor() {
     this._element = document.createElement("div");
-    this.element.classList.add("h-full", "w-full");
+    this.element.classList.add("h-full", "w-full", "relative");
   }
 }

@@ -27,3 +27,8 @@ dist-ssr
 *.old.*
 
 *.wasm
+
+
+# Added by cargo
+
+/target
