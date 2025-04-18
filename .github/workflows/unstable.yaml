@@ -27,21 +27,15 @@ jobs:
 
       - name: Build Golang WASM
         run: |
-          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./public/tailscale.wasm ./wasm/wasm.go
-          wasm-opt --enable-bulk-memory -Oz ./public/tailscale.wasm -o ./public/tailscale.wasm
-          cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./src/lib/api/tsconnect/wasm_exec.js
+          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
+          wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
+          cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
 
-      - name: Upload golang wasm
+      - name: Upload golang package
         uses: actions/upload-artifact@v4
         with:
-          name: golang-wasm
-          path: public/tailscale.wasm
-
-      - name: Upload golang wasm exec
-        uses: actions/upload-artifact@v4
-        with:
-          name: golang-wasm-exec
-          path: src/lib/api/tsconnect/wasm_exec.js
+          name: golang-wasm-pkg
+          path: src/lib/api/tsconnect/pkg/
 
   build-rust:
     runs-on: ubuntu-latest
@@ -82,17 +76,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Download golang wasm
+      - name: Download golang wasm package
         uses: actions/download-artifact@v4
         with:
-          name: golang-wasm
-          path: public/tailscale.wasm
-
-      - name: Download golang wasm exec
-        uses: actions/download-artifact@v4
-        with:
-          name: golang-wasm-exec
-          path: src/lib/api/tsconnect/wasm_exec.js
+          name: golang-wasm-pkg
+          path: src/lib/api/tsconnect/pkg/
 
       - name: Download rust wasm package
         uses: actions/download-artifact@v4
@@ -129,17 +117,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Download golang wasm
+      - name: Download golang wasm package
         uses: actions/download-artifact@v4
         with:
-          name: golang-wasm
-          path: public/tailscale.wasm
-
-      - name: Download golang wasm exec
-        uses: actions/download-artifact@v4
-        with:
-          name: golang-wasm-exec
-          path: src/lib/api/tsconnect/wasm_exec.js
+          name: golang-wasm-pkg
+          path: src/lib/api/tsconnect/pkg/
 
       - name: Download rust wasm package
         uses: actions/download-artifact@v4
@@ -164,7 +146,7 @@ jobs:
       - name: Upload app package
         uses: actions/upload-artifact@v4
         with:
-          name: dist
+          name: app-pkg
           path: dist/
 
   publish:
@@ -180,7 +162,7 @@ jobs:
       - name: Download app package
         uses: actions/download-artifact@v4
         with:
-          name: dist
+          name: app-pkg
           path: dist/
 
       - name: Set up QEMU

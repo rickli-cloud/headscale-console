@@ -1,1 +1,2 @@
-wasm_exec.js
+pkg/*
+!pkg/.gitkeep

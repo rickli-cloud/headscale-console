@@ -1,10 +1,9 @@
-// import { createIPN } from "@tailscale/connect";
-
 import { IpnStateStorage } from "$lib/store/ipn";
-import { joinUrl } from "$lib/utils/misc";
+
+import wasmUrl from "./pkg/client.wasm?url";
+import "./pkg/wasm_exec";
 
 import "./tsconnect.d";
-import "./wasm_exec";
 
 /**
  * Superset of the IPNConfig type, with additional configuration that is
@@ -24,11 +23,7 @@ export async function createClient(opt: IPNPackageConfig) {
   const go = new Go();
 
   const wasmInstance = await WebAssembly.instantiateStreaming(
-    fetch(
-      opt.wasmURL?.length
-        ? opt.wasmURL
-        : joinUrl(new URL(window.location.toString()), "tailscale.wasm")
-    ),
+    fetch(wasmUrl),
     go.importObject
   );
 
