@@ -76,6 +76,7 @@ declare global {
     self: IPNNetMapSelfNode;
     peers: IPNNetMapPeerNode[];
     lockedOut: boolean;
+    users: IPNNetMapUsers;
   };
 
   type IPNNetMapNode = {
@@ -83,6 +84,17 @@ declare global {
     addresses: string[];
     machineKey: string;
     nodeKey: string;
+    createdAt: string;
+  };
+
+  type IPNNetMapUsers = {
+    [id: string]: {
+      ID: number;
+      LoginName: string;
+      DisplayName: string;
+      ProfilePicURL: string;
+      Roles: unknown[];
+    };
   };
 
   type IPNNetMapSelfNode = IPNNetMapNode & {
@@ -90,6 +102,12 @@ declare global {
   };
 
   type IPNNetMapPeerNode = IPNNetMapNode & {
+    os: string;
+    osVersion: string;
+    lastSeen: string;
+    ipnVersion: string;
+    user: string;
+    routes: string[] | null;
     online?: boolean;
     tailscaleSSHEnabled: boolean;
   };

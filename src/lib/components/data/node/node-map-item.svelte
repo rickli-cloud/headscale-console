@@ -1,267 +1,195 @@
 <script lang="ts">
-  import type { IDockviewPanel } from "dockview-core";
-  import { onMount } from "svelte";
-
   import MoreHorizontal from "lucide-svelte/icons/more-horizontal";
   import ScreenShare from "lucide-svelte/icons/screen-share";
+  import DoorOpen from "lucide-svelte/icons/door-open";
   import Terminal from "lucide-svelte/icons/terminal";
-  import WifiOff from "lucide-svelte/icons/wifi-off";
-  import Clock from "lucide-svelte/icons/clock";
-  import Wifi from "lucide-svelte/icons/wifi";
 
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
+  import * as HoverCard from "$lib/components/ui/hover-card";
+  import * as Avatar from "$lib/components/ui/avatar";
+  import * as Table from "$lib/components/ui/table";
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
 
-  import { type XtermPanelParams } from "$lib/components/window/panels/xterm";
-  import { type NoVNCPanelParams } from "$lib/components/window/panels/novnc";
-  import { BasePanel } from "$lib/components/window/panels/base";
-  import type { Ipn } from "$lib/types/ipn.d";
+  import { encodeConnectParams, type ConnectParams } from "$lib/utils/connect";
+  import { getPathParams } from "$lib/utils/router";
+  import { shortName } from "$lib/utils/misc";
+  import { netMap } from "$lib/store/ipn";
   import { cn } from "$lib/utils/shadcn";
-  import Time from "$lib/components/utils/Time.svelte";
-  import type { IronRdpPanelParams } from "$lib/components/window/panels/ironrdp";
 
   interface Props {
-    peer: Ipn.Peer & { machineStatus?: string };
-    onexpand?: () => void;
-    isExpanded?: boolean;
+    peer: IPNNetMapPeerNode;
   }
 
-  let { peer, onexpand, isExpanded }: Props = $props();
+  let { peer }: Props = $props();
 
-  let panels = $state<IDockviewPanel[]>();
-
-  let self = $derived(typeof peer.machineStatus === "string");
-  let activeSession = $derived(
-    (panels || []).filter((panel) => panel.params?.hostname === peer.name)
-  );
+  let user = $derived($netMap?.users[peer.user?.replace(/^userid:/, "")]);
 
   function parseName(name: string): string {
     return name.split(/\./)[0];
   }
 
-  onMount(() => {
-    const addPanelListener = window.dockView?.onDidAddPanel(
-      () => (panels = window.dockView.panels)
-    );
-    const removePanelListener = window.dockView?.onDidRemovePanel(
-      () => (panels = window.dockView.panels)
-    );
+  function handleConnect(proto: ConnectParams["proto"]) {
+    const params = new URLSearchParams(getPathParams(window.location.hash));
 
-    panels = window.dockView.panels;
+    params.set("opt", encodeConnectParams({ host: peer.name, proto }));
 
-    return () => {
-      addPanelListener.dispose();
-      removePanelListener.dispose();
-    };
-  });
+    const loc = new URL(window.location.href);
+    loc.hash = `#/connect?${params.toString()}`;
 
-  function openSshPanel() {
-    const params: XtermPanelParams = {
-      hostname: peer.name,
-    };
-
-    window.dockView.addPanel({
-      id: window.crypto.randomUUID(),
-      title: parseName(peer.name),
-      component: "xterm",
-      params,
-    });
-  }
-
-  function openVncPanel() {
-    const params: NoVNCPanelParams = {
-      hostname: peer.name,
-      port: 5900,
-    };
-
-    window.dockView.addPanel({
-      id: window.crypto.randomUUID(),
-      title: parseName(peer.name),
-      component: "novnc",
-      params,
-    });
-  }
-
-  function openRdpPanel() {
-    const params: IronRdpPanelParams = {
-      hostname: peer.name,
-      port: 3389,
-    };
-
-    window.dockView.addPanel({
-      id: window.crypto.randomUUID(),
-      title: parseName(peer.name),
-      component: "ironrdp",
-      params,
-    });
+    // TODO: option to enable/disable popup
+    window.open(loc.toString(), "_blank", "popup")?.focus();
   }
 </script>
 
-<div class="border-b space-y-2 last:border-b-0">
-  <button
-    class="p-4 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex flex-col items-start gap-2 whitespace-nowrap text-sm leading-tight w-full"
-    class:bg-sidebar-accent={isExpanded}
-    disabled={self}
-    onclick={(ev) => {
-      if (ev.shiftKey && !self && peer.online && peer.tailscaleSSHEnabled) {
-        openSshPanel();
-      } else if (ev.shiftKey && !self && peer.online) {
-        openVncPanel();
-      } else {
-        onexpand?.();
-      }
-    }}
-  >
-    <div class="flex gap-4 justify-between items-center w-full">
-      <h3
-        class="max-w-full overflow-hidden text-ellipsis font-semibold text-sm flex gap-1.5 items-center"
-      >
-        <div>
-          {#if peer.online}
-            <Wifi class="h-3.5 w-3.5 text-green-600" />
-          {:else}
-            <WifiOff class="h-3.5 w-3.5 text-muted-foreground" />
-          {/if}
-        </div>
+<Table.Row>
+  <Table.Cell class="space-y-1 !align-top">
+    <p class="font-semibold">
+      {parseName(peer.name)}
+    </p>
 
-        <p>
-          {parseName(peer.name)}
-        </p>
-      </h3>
+    <p class="text-muted-foreground">
+      <HoverCard.Root>
+        <HoverCard.Trigger class="hover:underline">
+          {user?.DisplayName}
+        </HoverCard.Trigger>
 
-      <DropdownMenu.Root>
-        <DropdownMenu.Trigger class="ml-auto">
-          {#snippet child({ props })}
-            <Button
-              {...props}
-              variant="ghost"
-              size="icon"
-              class={cn("h-6 w-6", props.class || "")}
-            >
-              <MoreHorizontal class="size-3" />
-              <span class="sr-only">More options</span>
-            </Button>
-          {/snippet}
-        </DropdownMenu.Trigger>
+        <HoverCard.Content side="right">
+          <div class="flex items-center gap-2 text-left text-sm">
+            <Avatar.Root class="h-8 w-8 rounded-lg">
+              <!-- <Avatar.Image src={user.avatar} alt={user.name} /> -->
+              <Avatar.Fallback class="rounded-lg">
+                {shortName(user?.DisplayName || user?.LoginName || user?.ID)}
+              </Avatar.Fallback>
+            </Avatar.Root>
+            <div class="grid flex-1 text-left text-sm leading-tight">
+              <span class="truncate font-semibold">{user?.DisplayName}</span>
+              <span class="truncate text-xs">{user?.LoginName}</span>
+            </div>
+          </div>
+        </HoverCard.Content>
+      </HoverCard.Root>
+    </p>
 
-        <DropdownMenu.Content align="end" class="w-[160px]">
-          <DropdownMenu.Item
-            class="text-xs cursor-pointer"
-            disabled={self || !peer.online || !peer.tailscaleSSHEnabled}
-            onclick={openSshPanel}
-          >
-            <Terminal class="mr-2 size-3" />
-            New SSH Session
-          </DropdownMenu.Item>
+    <div
+      class="!mt-2 max-w-96 flex flex-wrap gap-1.5 items-center empty:hidden"
+    >
+      <!-- {#if peer.user.replace(/^userid:/, "") === window.ipnProfile?.Config?.UserProfile?.ID?.toString()}
+        <Badge class="flex gap-1 items-center text-[10px] h-5 px-1.5">
+          Owner
+        </Badge>
+      {/if} -->
 
-          <DropdownMenu.Item
-            class="text-xs cursor-pointer"
-            disabled={self || !peer.online}
-            onclick={openVncPanel}
-          >
-            <ScreenShare class="mr-2 size-3" />
-            New VNC Session
-          </DropdownMenu.Item>
+      {#if peer.tailscaleSSHEnabled}
+        <Badge
+          variant="outline"
+          class="flex gap-1 items-center text-[10px] h-5 px-1.5"
+        >
+          <Terminal class="size-2.5" />
+          <span>SSH</span>
+        </Badge>
+      {/if}
 
-          <DropdownMenu.Item
-            class="text-xs cursor-pointer"
-            disabled={self || !peer.online}
-            onclick={openRdpPanel}
-          >
-            <ScreenShare class="mr-2 size-3" />
-            New RDP Session
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Root>
-    </div>
-
-    <div class="flex gap-4 w-full justify-between">
-      <ul class="text-left text-muted-foreground text-xs">
-        {#each peer.addresses as addr}
-          <li>{addr}</li>
-        {/each}
-      </ul>
-
-      <div>
-        <div class="flex flex-wrap items-center gap-1.5 flex-row-reverse">
-          {#if peer.tailscaleSSHEnabled}
-            <Badge class="flex gap-1 items-center text-[10px] h-5 px-1.5">
-              <Terminal class="size-2.5" />
-              SSH
-            </Badge>
-          {/if}
-
-          {#if self}
-            {#if peer.machineStatus !== "MachineAuthorized"}
-              <Badge variant="destructive" class="text-[10px] h-5 px-1.5">
-                {peer.machineStatus}
-              </Badge>
-            {/if}
-
-            <Badge
-              variant="outline"
-              class="text-[10px] h-5 px-1.5 border-muted-foreground"
-            >
-              Self
-            </Badge>
-          {/if}
-
-          {#if activeSession.length > 0}
-            <Badge
-              variant="outline"
-              class="text-[10px] h-5 px-1.5 border-muted-foreground"
-            >
-              {activeSession.length} Session{activeSession.length > 1
-                ? "s"
-                : ""}
-            </Badge>
-          {/if}
-        </div>
-      </div>
-    </div>
-  </button>
-
-  {#if isExpanded}
-    <div class=" space-y-2 w-full text-left px-4 pb-4">
-      <h4 class="text-sm">Active Sessions</h4>
-
-      {#if activeSession?.length}
-        <div class="">
-          {#each activeSession as panel}
-            <button
-              class="w-full p-1.5 flex gap-3 items-center justify-between hover:bg-sidebar-accent border-b last:border-b-0"
-              onclick={() => panel.focus()}
-            >
-              {#if panel.api.component === "xterm"}
-                <p class="flex gap-1.5 items-center text-xs">
-                  <Terminal class="size-3" />
-                  SSH
-                </p>
-              {:else if panel.api.component === "novnc"}
-                <p class="flex gap-1.5 items-center text-xs">
-                  <ScreenShare class="size-3" />
-                  VNC
-                </p>
-              {:else if panel.api.component === "ironrdp"}
-                <p class="flex gap-1.5 items-center text-xs">
-                  <ScreenShare class="size-3" />
-                  RDP
-                </p>
-              {/if}
-
-              {#if panel.view.content instanceof BasePanel}
-                <p class="flex gap-1.5 items-center text-xs">
-                  <Clock class="size-3" />
-                  <Time createdAt={panel.view.content.createdAt} />
-                </p>
-              {/if}
-            </button>
-          {/each}
-        </div>
-      {:else}
-        <p class="text-xs text-muted-foreground">None</p>
+      {#if peer.routes?.find((i) => i === "0.0.0.0/0") || peer.routes?.find((i) => i === "::/0")}
+        <Badge
+          variant="outline"
+          class="flex gap-1 items-center text-[10px] h-5 px-1.5"
+        >
+          <DoorOpen class="size-2.5" />
+          <span>Exit Node</span>
+        </Badge>
       {/if}
     </div>
-  {/if}
-</div>
+  </Table.Cell>
+
+  <Table.Cell class="space-y-1 !align-top">
+    {#each [...peer.addresses, ...(peer.routes || [])] as addr}
+      <p>
+        {addr}
+      </p>
+    {/each}
+  </Table.Cell>
+
+  <Table.Cell class="space-y-1 !align-top">
+    <div>
+      {peer.os}
+      <span class="text-xs text-muted-foreground">
+        {peer.osVersion}
+      </span>
+    </div>
+
+    <div class="text-muted-foreground text-xs">
+      {peer.ipnVersion}
+    </div>
+  </Table.Cell>
+
+  <Table.Cell class="space-y-1.5 !align-top">
+    <div class="flex items-center gap-1.5 text-xs">
+      <div
+        class="rounded full w-2 h-2 mt-0.5"
+        class:bg-green-600={peer.online}
+        class:bg-muted={!peer.online}
+      ></div>
+      <span class:text-muted-foreground={!peer.online}>
+        {peer.online
+          ? "Connected"
+          : peer.lastSeen
+            ? new Date(peer.lastSeen).toLocaleString()
+            : "Unknown"}
+      </span>
+    </div>
+
+    <div class="text-xs text-muted-foreground">
+      Created: {peer.createdAt
+        ? new Date(peer.createdAt).toLocaleString()
+        : "Unknown"}
+    </div>
+  </Table.Cell>
+
+  <Table.Cell class="!align-top flex flex-col gap-1.5">
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger class="ml-auto">
+        {#snippet child({ props })}
+          <Button
+            {...props}
+            variant="ghost"
+            size="icon"
+            class={cn("h-6 w-6", props.class || "")}
+          >
+            <MoreHorizontal class="size-3" />
+            <span class="sr-only">More options</span>
+          </Button>
+        {/snippet}
+      </DropdownMenu.Trigger>
+
+      <DropdownMenu.Content align="end" class="w-[160px]">
+        <DropdownMenu.Item
+          class="text-xs cursor-pointer"
+          disabled={!peer.online || !peer.tailscaleSSHEnabled}
+          onclick={() => handleConnect("ssh")}
+        >
+          <Terminal class="mr-2 size-3" />
+          SSH
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          class="text-xs cursor-pointer"
+          disabled={!peer.online || peer.os === "js"}
+          onclick={() => handleConnect("vnc")}
+        >
+          <ScreenShare class="mr-2 size-3" />
+          VNC
+        </DropdownMenu.Item>
+
+        <DropdownMenu.Item
+          class="text-xs cursor-pointer"
+          disabled={!peer.online || peer.os === "js"}
+          onclick={() => handleConnect("rdp")}
+        >
+          <ScreenShare class="mr-2 size-3" />
+          RDP
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  </Table.Cell>
+</Table.Row>

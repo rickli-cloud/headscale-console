@@ -10,7 +10,11 @@ const pkg: typeof import("./package.json") = JSON.parse(
 // https://vite.dev/config/
 export default defineConfig({
   base: "",
-  plugins: [versionVirtualModulePlugin(), svelte()],
+  plugins: [
+    versionVirtualModulePlugin(),
+    ipnVersionVirtualModulePlugin(),
+    svelte(),
+  ],
   resolve: {
     alias: {
       $lib: resolve(__dirname, "src/lib"),
@@ -32,7 +36,23 @@ function versionVirtualModulePlugin(): Plugin {
     },
     load(id) {
       if (id === "\0" + versionVirtualModuleId) {
-        return `export default "${pkg.version}"`;
+        return `export default "${pkg.version.replace(/^0\.0\.0-/, "")}"`;
+      }
+    },
+  };
+}
+const ipnVersionVirtualModuleId = "virtual:ipn-version";
+function ipnVersionVirtualModulePlugin(): Plugin {
+  return {
+    name: "version-virtual-module-plugin",
+    resolveId(id) {
+      if (id === ipnVersionVirtualModuleId) {
+        return "\0" + ipnVersionVirtualModuleId;
+      }
+    },
+    load(id) {
+      if (id === "\0" + ipnVersionVirtualModuleId) {
+        return `export default "1.80.3"`;
       }
     },
   };

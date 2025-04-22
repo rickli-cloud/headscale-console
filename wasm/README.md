@@ -15,19 +15,19 @@ wasm-pack build --out-name ironrdp --target web
 #### Build initial binary
 
 ```sh
-GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./public/tailscale.wasm ./wasm/wasm.go
+GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
 ```
 
 #### Optimize with binaryen
 
 ```sh
-wasm-opt --enable-bulk-memory -Oz ./public/tailscale.wasm -o ./public/tailscale.wasm
+wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
 ```
 
 #### Copy required helper functions
 
 ```sh
-cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./src/lib/api/tsconnect/wasm_exec.js
+cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
 ```
 
 > Could also be at `$(go env GOROOT)/lib/wasm/wasm_exec.js`

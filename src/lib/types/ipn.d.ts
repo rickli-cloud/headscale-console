@@ -55,27 +55,4 @@ export namespace Ipn {
     LoginName: string;
     DisplayName: string;
   }
-
-  export interface NetMap {
-    self: Self;
-    peers: Peer[];
-    lockedOut: boolean;
-  }
-
-  export interface Self {
-    name: string;
-    addresses: string[];
-    machineKey: string;
-    nodeKey: string;
-    machineStatus: string;
-  }
-
-  export interface Peer {
-    name: string;
-    addresses: string[];
-    machineKey: string;
-    nodeKey: string;
-    online: boolean;
-    tailscaleSSHEnabled: boolean;
-  }
 }

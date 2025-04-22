@@ -24,7 +24,7 @@
     <AlertDialog.Header>
       <AlertDialog.Title>Log out?</AlertDialog.Title>
       <AlertDialog.Description>
-        This will terminate all active SSH sessions and clear session data.
+        This will terminate all active sessions and clear any related data
       </AlertDialog.Description>
     </AlertDialog.Header>
 

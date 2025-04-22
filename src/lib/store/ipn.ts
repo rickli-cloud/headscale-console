@@ -7,7 +7,7 @@ const statePrefix = "ipn-state-";
 const currentProfileKey = "_current-profile";
 const profileRegex = new RegExp(`^${statePrefix}profile-`, "i");
 
-export const netMap = writable<Ipn.NetMap | undefined>(undefined);
+export const netMap = writable<IPNNetMap | undefined>(undefined);
 
 netMap.subscribe((netMap) => console.debug("netMap:", netMap));
 

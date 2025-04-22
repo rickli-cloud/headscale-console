@@ -20,3 +20,10 @@ export function joinUrl(base: URL | Location, path: string) {
 
   return str;
 }
+
+export function shortName(name: string | number | undefined) {
+  if (typeof name !== "number" && !name?.length) return "?";
+  const split = String(name).split(/\s+/g);
+  if (split.length === 2) return `${split[0][0]}${split[1][0]}`.toUpperCase();
+  return String(name).slice(0, 2).toUpperCase();
+}

@@ -1,24 +1,45 @@
-import type { DockviewApi } from "dockview-core";
 import { ModeWatcher } from "mode-watcher";
 import { mount, unmount } from "svelte";
 
 import { createClient, IpnEventHandler } from "$lib/api/tsconnect";
 import { loadIpnProfiles, netMap } from "$lib/store/ipn";
 import type { Ipn } from "$lib/types/ipn.d";
+import {
+  getPathParams,
+  getRouteComponent,
+  type AppRoutes,
+} from "$lib/utils/router";
 
 import "./app.css";
-import App from "./App.svelte";
-import LoginScreen from "./LoginScreen.svelte";
+
 import LoadingScreen from "./LoadingScreen.svelte";
+import LoginScreen from "./LoginScreen.svelte";
+import Connect from "./Connect.svelte";
+import NotFound from "./404.svelte";
+import App from "./App.svelte";
 
 declare global {
   interface Window {
     ipn: IPN;
-    dockView: DockviewApi;
-    ipnEventHandler: IpnEventHandler;
     ipnProfile: Ipn.Profile | undefined;
+    ipnEventHandler: IpnEventHandler;
   }
 }
+
+const routes: AppRoutes = [
+  {
+    path: /^\/?$/,
+    component: App,
+  },
+  {
+    path: /^\/?connect\/?$/,
+    component: Connect,
+  },
+  {
+    path: "*",
+    component: NotFound,
+  },
+];
 
 (async () => {
   const appEl = document.getElementById("app")!;
@@ -31,6 +52,10 @@ declare global {
   let loginScreen: Mount;
   let stopped = false;
 
+  const authKey =
+    new URLSearchParams(getPathParams(window.location.hash)).get("k") ||
+    undefined;
+
   let tsProfiles = loadIpnProfiles();
 
   window.ipnProfile = tsProfiles.current
@@ -40,6 +65,7 @@ declare global {
   window.ipn = await createClient({
     panicHandler: console.error,
     routeAll: true,
+    authKey,
     controlURL:
       import.meta.env.VITE_DEV_HEADSCALE_HOST ||
       window.ipnProfile?.ControlURL ||
@@ -67,8 +93,6 @@ declare global {
         target: appEl,
         props: { url: ev.url },
       });
-
-      window.open(ev.url, "_blank");
     }
   );
 
@@ -110,7 +134,9 @@ declare global {
             loginScreen = undefined;
           }
 
-          app = mount(App, { target: appEl });
+          const component = getRouteComponent(routes, location.hash);
+
+          app = mount(component, { target: appEl });
 
           break;
         case "Stopped":

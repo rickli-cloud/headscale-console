@@ -104,15 +104,25 @@
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground overflow-hidden;
+    @apply bg-background text-foreground min-w-[420px];
   }
 
   html,
   body,
   #app,
-  main,
-  main > div {
-    @apply h-full;
+  main {
+    @apply min-h-full;
   }
+}
+
+.terminal {
+  @apply h-full w-full;
+}
+
+label.required::after,
+label:has(+ input[required=""])::after {
+  @apply mx-0.5 text-current opacity-60;
+  content: "*";
 }

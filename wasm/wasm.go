@@ -291,9 +291,11 @@ func (i *jsIPN) run(jsCallbacks js.Value) {
 						Addresses:  mapSliceView(nm.GetAddresses(), func(a netip.Prefix) string { return a.Addr().String() }),
 						NodeKey:    nm.NodeKey.String(),
 						MachineKey: nm.MachineKey.String(),
+						CreatedAt:  nm.SelfNode.Created().String(),
 					},
 					MachineStatus: jsMachineStatus[nm.GetMachineStatus()],
 				},
+				Users: nm.UserProfiles,
 				Peers: mapSlice(nm.Peers, func(p tailcfg.NodeView) jsNetMapPeerNode {
 					name := p.Name()
 					if name == "" {
@@ -310,7 +312,15 @@ func (i *jsIPN) run(jsCallbacks js.Value) {
 							Addresses:  addrs,
 							MachineKey: p.Machine().String(),
 							NodeKey:    p.Key().String(),
+							CreatedAt:  p.Created().String(),
 						},
+						LastSeen:            p.LastSeen().String(),
+						OS:                  p.Hostinfo().OS(),
+						OSVersion:           p.Hostinfo().OSVersion(),
+						IPNVersion:          p.Hostinfo().IPNVersion(),
+						User:                p.User().String(),
+						Tags:                p.Tags(),
+						Routes:              p.Hostinfo().RoutableIPs(),
 						Online:              p.Online().Clone(),
 						TailscaleSSHEnabled: p.Hostinfo().TailscaleSSHEnabled(),
 					}
@@ -758,9 +768,10 @@ func (w termWriter) Write(p []byte) (n int, err error) {
 }
 
 type jsNetMap struct {
-	Self      jsNetMapSelfNode   `json:"self"`
-	Peers     []jsNetMapPeerNode `json:"peers"`
-	LockedOut bool               `json:"lockedOut"`
+	Self      jsNetMapSelfNode                       `json:"self"`
+	Peers     []jsNetMapPeerNode                     `json:"peers"`
+	Users     map[tailcfg.UserID]tailcfg.UserProfile `json:"users"`
+	LockedOut bool                                   `json:"lockedOut"`
 }
 
 type jsNetMapNode struct {
@@ -768,6 +779,7 @@ type jsNetMapNode struct {
 	Addresses  []string `json:"addresses"`
 	MachineKey string   `json:"machineKey"`
 	NodeKey    string   `json:"nodeKey"`
+	CreatedAt  string   `json:"createdAt"`
 }
 
 type jsNetMapSelfNode struct {
@@ -777,8 +789,15 @@ type jsNetMapSelfNode struct {
 
 type jsNetMapPeerNode struct {
 	jsNetMapNode
-	Online              *bool `json:"online,omitempty"`
-	TailscaleSSHEnabled bool  `json:"tailscaleSSHEnabled"`
+	LastSeen            string                    `json:"lastSeen"`
+	OS                  string                    `json:"os"`
+	OSVersion           string                    `json:"osVersion"`
+	IPNVersion          string                    `json:"ipnVersion"`
+	User                string                    `json:"user"`
+	Tags                views.Slice[string]       `json:"tags"`
+	Routes              views.Slice[netip.Prefix] `json:"routes"`
+	Online              *bool                     `json:"online,omitempty"`
+	TailscaleSSHEnabled bool                      `json:"tailscaleSSHEnabled"`
 }
 
 type jsStateStore struct {
