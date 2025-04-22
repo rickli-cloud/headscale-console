@@ -9,5 +9,13 @@
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
+    <script lang="ts">
+      /* Make sure the url path ends with a "/" so relative content is loaded properly */
+      const url = new URL(window.location.href);
+      if (!/\/$/.test(url.pathname)) {
+        url.pathname = url.pathname + "/";
+        window.location.href = url.toString();
+      }
+    </script>
   </body>
 </html>
