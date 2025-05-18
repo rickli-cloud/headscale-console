@@ -29,7 +29,7 @@ jobs:
         run: |
           GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.80.3 -X tailscale.com/version.longStamp=1.80.3-HeadscaleConsole-unstable -s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
           wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
-          cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
+          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
 
       - name: Upload golang package
         uses: actions/upload-artifact@v4
