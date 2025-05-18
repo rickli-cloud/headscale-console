@@ -37,7 +37,8 @@ A minimal Docker image is available, featuring a Go web server to serve the stat
 docker run -it -p 3000:3000 ghcr.io/rickli-cloud/headscale-console:latest headscale-console serve --help
 
 # self-service tsnet server
-docker run -it -p 3000:3000 ghcr.io/rickli-cloud/headscale-console:latest headscale-console selfservice --help
+# Note: This requires the Headscale Unix socket to be mounted into the container
+docker run -it -p 3000:3000 -v ./selfservice-data:/data:rw -v headscale-socket:/var/run/headscale:ro ghcr.io/rickli-cloud/headscale-console:latest headscale-console selfservice --help
 ```
 
 ### Static Hosting

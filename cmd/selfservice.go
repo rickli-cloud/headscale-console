@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	pb "github.com/rickli-cloud/headscale-console/gen/go/headscale/v1"
@@ -28,6 +26,9 @@ func init() {
 
 	selfServiceCmd.Flags().StringP("grpc-endpoint", "g", "unix:///var/run/headscale/headscale.sock", "Headscale GRPC endpoint")
 	viper.BindPFlag("grpc-endpoint", selfServiceCmd.Flags().Lookup("grpc-endpoint"))
+
+	selfServiceCmd.Flags().String("state-dir", "data", "Session data storage location")
+	viper.BindPFlag("state-dir", selfServiceCmd.Flags().Lookup("state-dir"))
 
 	selfServiceCmd.Flags().String("hostname", "self-service", "Node hostname")
 	viper.BindPFlag("hostname", selfServiceCmd.Flags().Lookup("hostname"))
@@ -57,6 +58,7 @@ var selfServiceCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		grpcEndpoint := viper.GetString("grpc-endpoint")
 		controlUrl := viper.GetString("control-url")
+		stateDir := viper.GetString("state-dir")
 		hostname := viper.GetString("hostname")
 		user := viper.GetString("user")
 		tags := viper.GetStringSlice("advertise-tags")
@@ -121,11 +123,6 @@ var selfServiceCmd = &cobra.Command{
 			log.Fatal().Err(err).Msg("Failed to create a new Authkey")
 		}
 
-		rootDir, err := os.Executable()
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to get current directory")
-		}
-		stateDir := filepath.Join(filepath.Dir(rootDir), "data")
 		stateStore, err := ipnState.NewFileStateStore(stateDir)
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to create state storage")
