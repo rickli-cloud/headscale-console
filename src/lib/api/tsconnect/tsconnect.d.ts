@@ -31,7 +31,7 @@ declare global {
         onDone: () => void;
       }
     ): IPNSSHSession;
-    fetch(url: string, options?: IPNFetchOptions): Promise<IPNFetchResponse>;
+    fetch(options: IPNFetchOptions): Promise<IPNFetchResponse>;
     tcp(config: {
       hostname: string;
       port: number;
@@ -40,6 +40,11 @@ declare global {
       writeBufferSizeInBytes?: number;
       readBufferSizeInBytes?: number;
     }): Promise<IPNTCPSession>;
+    /** Experimental */
+    resolve(hostname: string): Promise<{
+      result: string;
+      resolvers: string[];
+    }>;
   }
 
   interface IPNSSHSession {
@@ -48,6 +53,7 @@ declare global {
   }
 
   interface IPNTCPSession {
+    remoteAddr: string;
     close(): Promise<void>;
     write(buffer: Uint8Array): Promise<number>;
   }
@@ -63,6 +69,7 @@ declare global {
     controlURL?: string;
     hostname?: string;
     routeAll?: boolean;
+    advertiseTags?: string;
   };
 
   type IPNCallbacks = {
@@ -73,6 +80,7 @@ declare global {
   };
 
   type IPNNetMap = {
+    domain: string;
     self: IPNNetMapSelfNode;
     peers: IPNNetMapPeerNode[];
     lockedOut: boolean;
@@ -85,6 +93,7 @@ declare global {
     machineKey: string;
     nodeKey: string;
     createdAt: string;
+    ipnVersion: string;
   };
 
   type IPNNetMapUsers = {
@@ -102,13 +111,15 @@ declare global {
   };
 
   type IPNNetMapPeerNode = IPNNetMapNode & {
+    id: string;
     os: string;
     osVersion: string;
     lastSeen: string;
-    ipnVersion: string;
     user: string;
     routes: string[] | null;
-    online?: boolean;
+    tags: string[] | null;
+    online: boolean;
+    expired: boolean;
     tailscaleSSHEnabled: boolean;
   };
 
@@ -130,14 +141,16 @@ declare global {
     | "MachineInvalid";
 
   interface IPNFetchOptions {
+    /** The url to request. Works with magicDNS hostnames */
+    url: string;
     /** HTTP method to use for the request */
     method?: string;
     /** Headers to include in the request */
-    headers?: Record<string, string>;
+    headers?: Record<string, string[]>;
     /** Body to send with the request */
-    body?: string;
+    // body?: string;
     /** Whether to skip TLS verification */
-    skipTLSVerify?: boolean;
+    // skipTLSVerify?: boolean;
   }
 
   interface IPNFetchResponse {
@@ -149,7 +162,5 @@ declare global {
     headers: Record<string, string>;
     /** Get response body as text */
     text(): Promise<string>;
-    /** Get response body as JSON */
-    json(): Promise<any>;
   }
 }

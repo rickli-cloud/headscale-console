@@ -143,6 +143,10 @@ export class IpnRawTcpChannel extends EventTarget implements RTCDataChannel {
   public readonly readyState: "open" = "open";
   public readonly protocol: "wss" = "wss";
 
+  public get remoteAddr(): string {
+    return this.tcp.remoteAddr;
+  }
+
   public onclosing = () => {
     console.debug("TCP session closing");
   };

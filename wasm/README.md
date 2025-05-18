@@ -1,16 +1,33 @@
-# WASM client
+# WASM
 
-## Build
+## Rust
 
-### Rust
+Responsible for handling RDP connections (framing, TLS & rendering).
+
+### Build Rust WASM
 
 ```sh
 wasm-pack build --out-name ironrdp --target web
 ```
 
-### Golang
+> Builds `wasm/pkg` which is then imported by JS thru vite package alias ($pkg/...).
 
+## Golang
+
+A WASM client that allows connecting to your Headscale instance over ts2021 & DERP.
+
+### Build Golang WASM
+
+> [!IMPORTANT]  
 > All commands are meant to be run from the root directory of this project.
+
+To build inside Docker:
+
+```sh
+docker run -it --rm -v .:/work:rw --workdir /work golang:latest
+# Inside container
+apt update && apt install binaryen
+```
 
 #### Build initial binary
 

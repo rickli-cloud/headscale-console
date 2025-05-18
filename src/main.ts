@@ -3,12 +3,9 @@ import { mount, unmount } from "svelte";
 
 import { createClient, IpnEventHandler } from "$lib/api/tsconnect";
 import { loadIpnProfiles, netMap } from "$lib/store/ipn";
+import { loadAppConfig } from "./lib/store/config";
 import type { Ipn } from "$lib/types/ipn.d";
-import {
-  getPathParams,
-  getRouteComponent,
-  type AppRoutes,
-} from "$lib/utils/router";
+import { AppRouter, type AppRoute } from "$lib/utils/router";
 
 import "./app.css";
 
@@ -17,44 +14,58 @@ import LoginScreen from "./LoginScreen.svelte";
 import Connect from "./Connect.svelte";
 import NotFound from "./404.svelte";
 import App from "./App.svelte";
+import { loadUserSettings } from "$lib/store/settings";
 
 declare global {
   interface Window {
     ipn: IPN;
     ipnProfile: Ipn.Profile | undefined;
     ipnEventHandler: IpnEventHandler;
+    appRouter: AppRouter;
   }
 }
 
-const routes: AppRoutes = [
-  {
-    path: /^\/?$/,
-    component: App,
-  },
-  {
-    path: /^\/?connect\/?$/,
-    component: Connect,
-  },
-  {
-    path: "*",
-    component: NotFound,
-  },
+const routes: AppRoute[] = [
+  { path: /^\/?$/, component: App },
+  { path: /^\/?connect\/?$/, component: Connect },
 ];
 
+type Mount = object;
+
 (async () => {
-  const appEl = document.getElementById("app")!;
+  const appEl = document.getElementById("app");
+  if (!appEl) {
+    throw new Error("Failed to get HTML element #app");
+  }
 
   mount(ModeWatcher, { target: document.body });
 
-  let loadingScreen: Mount = mount(LoadingScreen, { target: appEl });
+  let loadingScreen: Mount | undefined = mount(LoadingScreen, {
+    target: appEl,
+  });
+  let loginScreen: Mount | undefined;
 
-  let app: Mount;
-  let loginScreen: Mount;
   let stopped = false;
 
-  const authKey =
-    new URLSearchParams(getPathParams(window.location.hash)).get("k") ||
-    undefined;
+  let params = new URLSearchParams(window.location.search);
+
+  let authKey = params.get("k") || undefined;
+  if (authKey) authKey = decodeURIComponent(authKey);
+
+  let paramsTags = params.get("t") || undefined;
+  if (paramsTags) paramsTags = decodeURIComponent(paramsTags);
+
+  let cfg = await loadAppConfig();
+
+  loadUserSettings(cfg.defaults);
+
+  window.appRouter = new AppRouter({
+    target: appEl,
+    fallbackComponent: NotFound,
+  });
+  for (const route of routes) {
+    window.appRouter.routes.push(route);
+  }
 
   let tsProfiles = loadIpnProfiles();
 
@@ -66,10 +77,8 @@ const routes: AppRoutes = [
     panicHandler: console.error,
     routeAll: true,
     authKey,
-    controlURL:
-      import.meta.env.VITE_DEV_HEADSCALE_HOST ||
-      window.ipnProfile?.ControlURL ||
-      new URL("/", window.location.toString()).toString(),
+    controlURL: cfg.controlUrl,
+    advertiseTags: [...(paramsTags || []), ...cfg.tags].join(";"),
   });
 
   window.ipnEventHandler = new IpnEventHandler();
@@ -87,6 +96,10 @@ const routes: AppRoutes = [
       if (loadingScreen) {
         unmount(loadingScreen);
         loadingScreen = undefined;
+      }
+      if (loginScreen) {
+        unmount(loginScreen);
+        loginScreen = undefined;
       }
 
       loginScreen = mount(LoginScreen, {
@@ -110,7 +123,8 @@ const routes: AppRoutes = [
 
       switch (ev.state) {
         case "NeedsLogin":
-          if (!stopped) window.ipn.login();
+          if (stopped) break;
+          window.ipn.login();
           break;
         case "Running":
           tsProfiles = loadIpnProfiles();
@@ -134,36 +148,32 @@ const routes: AppRoutes = [
             loginScreen = undefined;
           }
 
-          const component = getRouteComponent(routes, location.hash);
+          window.appRouter.resolve();
 
-          app = mount(component, { target: appEl });
+          // const component = getRouteComponent(routes, location.hash);
+          // app = mount(component, { target: appEl });
 
           break;
         case "Stopped":
           stopped = true;
-          if (app) {
-            await unmount(app);
-            app = undefined;
-          }
+          window.appRouter.unmount();
           break;
       }
+    }
+  );
 
-      window.ipnEventHandler.addEventListener(
-        window.ipnEventHandler.Events.netMap,
-        (ev) => {
-          if (!(ev instanceof window.ipnEventHandler.NotifyNetMapEvent)) {
-            throw new Error(
-              `Event payload for "${window.ipnEventHandler.Events.netMap}" is not instance of NotifyNetMapEvent`,
-              { cause: ev }
-            );
-          }
-          if (ev.netMapStr) netMap.set(JSON.parse(ev.netMapStr));
-        }
-      );
+  window.ipnEventHandler.addEventListener(
+    window.ipnEventHandler.Events.netMap,
+    (ev) => {
+      if (!(ev instanceof window.ipnEventHandler.NotifyNetMapEvent)) {
+        throw new Error(
+          `Event payload for "${window.ipnEventHandler.Events.netMap}" is not instance of NotifyNetMapEvent`,
+          { cause: ev }
+        );
+      }
+      if (ev.netMapStr) netMap.set(JSON.parse(ev.netMapStr));
     }
   );
 
   window.ipn.run(window.ipnEventHandler);
 })();
-
-type Mount = { $set?: any; $on?: any } | undefined;

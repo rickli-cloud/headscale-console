@@ -10,6 +10,8 @@
           "bg-secondary text-secondary-foreground hover:bg-secondary/80 border-transparent",
         destructive:
           "bg-destructive text-destructive-foreground hover:bg-destructive/80 border-transparent shadow",
+        warning:
+          "bg-yellow-600 text-destructive-foreground hover:bg-yellow-600/80 border-transparent shadow",
         outline: "text-foreground",
         positive:
           "bg-green-600 text-white hover:bg-green-600/80 border-transparent shadow",

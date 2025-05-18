@@ -16,23 +16,11 @@
 
   import NodeMapItem from "./node-map-item.svelte";
 
-  import appVersion from "virtual:app-version";
-  import ipnVersion from "virtual:ipn-version";
-
   let showOwned = $state<boolean>(true);
   let showExternal = $state<boolean>(true);
 
-  // let expandedPeer = $state<string | null>(null);
-
   let visiblePeers = $derived<IPNNetMapPeerNode[]>(
     sortPeers(filterPeers($netMap?.peers || []))
-  );
-
-  const baseDomain = $derived(
-    $netMap?.self?.name.replace(
-      new RegExp(`^${window.ipnProfile?.Hostname}\\.`),
-      ""
-    )
   );
 
   function filterPeers(peers: IPNNetMapPeerNode[]): IPNNetMapPeerNode[] {
@@ -55,8 +43,11 @@
 
   function sortPeers(peers: IPNNetMapPeerNode[]): IPNNetMapPeerNode[] {
     peers = [
-      ...(peers?.filter((peer) => peer.tailscaleSSHEnabled) || []),
-      ...(peers?.filter((peer) => !peer.tailscaleSSHEnabled) || []),
+      ...(peers?.filter((peer) => !peer.expired && peer.tailscaleSSHEnabled) ||
+        []),
+      ...(peers?.filter((peer) => !peer.expired && !peer.tailscaleSSHEnabled) ||
+        []),
+      ...(peers?.filter((peer) => peer.expired) || []),
     ];
 
     peers = [
@@ -102,7 +93,7 @@
         <Table.Row>
           <Table.Cell class="space-y-1 !align-top">
             <p class="font-semibold">
-              {$netMap.self.name.replace(new RegExp(`\\.${baseDomain}$`), "")}
+              {$netMap.self.name.split(/\./)[0]}
             </p>
 
             <p class="text-muted-foreground">
@@ -143,7 +134,7 @@
               </Badge> -->
 
               <Badge
-                variant="secondary"
+                variant="outline"
                 class="flex gap-1 items-center text-[10px] h-5 px-1.5"
               >
                 Self
@@ -162,7 +153,7 @@
           <Table.Cell class="space-y-1 !align-top">
             <div>js</div>
             <div class="text-muted-foreground text-xs">
-              {ipnVersion}-HeadscaleConsole-{appVersion}
+              {$netMap.self.ipnVersion}
             </div>
           </Table.Cell>
 

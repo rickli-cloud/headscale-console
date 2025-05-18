@@ -1,18 +1,28 @@
-FROM golang:latest as build
+FROM golang:latest AS build
 
 WORKDIR /work
 
-COPY dist/ dist/
-COPY server.go server.go
+COPY internal/ internal/
+COPY main.go main.go
+COPY gen/ gen/
+COPY cmd/ cmd/
+COPY go.* ./
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build $PWD/server.go
+COPY dist/ dist/
+COPY frontend.go.tmpl dist/frontend.go
+
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build main.go
+
 
 FROM scratch
 
+ENV PATH=/
+
 LABEL maintainer=github.com/rickli-cloud
 
-COPY --from=build /work/server .
+COPY --from=build /work/main headscale-console
 
 EXPOSE 3000
 
-ENTRYPOINT [ "/server" ]
+ENTRYPOINT [ "/headscale-console" ]
+CMD [ "serve" ]

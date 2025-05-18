@@ -6,7 +6,6 @@
 
   import { QrCode } from "$lib/components/qrcode";
   import Input from "$lib/components/ui/input/input.svelte";
-  import { getPathClean, getPathParams } from "$lib/utils/router";
 
   interface Props {
     url: string;
@@ -47,16 +46,16 @@
           if (!authkey?.length) return;
 
           const url = new URL(window.location.href);
-          const path = getPathClean(url.hash);
-          const params = new URLSearchParams(getPathParams(url.hash));
 
-          params.set("k", authkey);
-          const newHash = `#${path.length ? path : "/"}?${params.toString()}`;
+          url.searchParams.set("k", authkey);
+          url.hash = `#${window.appRouter.currentPath.length ? window.appRouter.currentPath : "/"}`;
 
-          console.warn({ newHash, path, params, url });
+          window.location.href = url.toString();
 
-          window.location.hash = newHash;
-          window.location.reload();
+          console.warn({
+            path: window.appRouter.currentPath,
+            url,
+          });
         }}
       >
         <Input

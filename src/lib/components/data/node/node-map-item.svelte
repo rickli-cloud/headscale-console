@@ -1,8 +1,11 @@
 <script lang="ts">
   import MoreHorizontal from "lucide-svelte/icons/more-horizontal";
   import ScreenShare from "lucide-svelte/icons/screen-share";
+  import ClockAlert from "lucide-svelte/icons/clock-alert";
+  import ShieldOff from "lucide-svelte/icons/shield-off";
   import DoorOpen from "lucide-svelte/icons/door-open";
   import Terminal from "lucide-svelte/icons/terminal";
+  import Trash from "lucide-svelte/icons/trash-2";
 
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
   import * as HoverCard from "$lib/components/ui/hover-card";
@@ -11,11 +14,16 @@
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
 
+  import ConfirmAction from "$lib/components/utils/ConfirmAction.svelte";
+
   import { encodeConnectParams, type ConnectParams } from "$lib/utils/connect";
-  import { getPathParams } from "$lib/utils/router";
+  import { selfserviceCap } from "$lib/store/selfservice";
+  import { SelfService } from "$lib/api/self-service";
   import { shortName } from "$lib/utils/misc";
   import { netMap } from "$lib/store/ipn";
   import { cn } from "$lib/utils/shadcn";
+  import { get } from "svelte/store";
+  import { UserSettingKeys, userSettings } from "$lib/store/settings";
 
   interface Props {
     peer: IPNNetMapPeerNode;
@@ -24,21 +32,41 @@
   let { peer }: Props = $props();
 
   let user = $derived($netMap?.users[peer.user?.replace(/^userid:/, "")]);
+  let isOwned = $derived(
+    Number(user?.ID) === window.ipnProfile?.Config?.UserProfile?.ID
+  );
+
+  let confirmExpire = $state<ConfirmAction>();
+  let confirmDelete = $state<ConfirmAction>();
 
   function parseName(name: string): string {
     return name.split(/\./)[0];
   }
 
   function handleConnect(proto: ConnectParams["proto"]) {
-    const params = new URLSearchParams(getPathParams(window.location.hash));
+    const url = new URL(window.location.href);
 
-    params.set("opt", encodeConnectParams({ host: peer.name, proto }));
+    url.hash = "#/connect";
+    url.searchParams.set(
+      "opt",
+      encodeConnectParams({ host: peer.name.replace(/\.$/, ""), proto })
+    );
 
-    const loc = new URL(window.location.href);
-    loc.hash = `#/connect?${params.toString()}`;
+    const settings = get(userSettings);
 
-    // TODO: option to enable/disable popup
-    window.open(loc.toString(), "_blank", "popup")?.focus();
+    if (settings[UserSettingKeys.openConnectNewTab] === "true") {
+      window
+        .open(
+          url.toString(),
+          "_blank",
+          settings[UserSettingKeys.openConnectAsPopUp] === "true"
+            ? "popup"
+            : undefined
+        )
+        ?.focus();
+    } else {
+      window.appRouter.goto(url);
+    }
   }
 </script>
 
@@ -72,33 +100,43 @@
     </p>
 
     <div
-      class="!mt-2 max-w-96 flex flex-wrap gap-1.5 items-center empty:hidden"
+      class="!mt-2 max-w-96 flex flex-wrap gap-1.5 items-center empty:hidden [&>span]:text-[10px] [&>span]:h-5 [&>span]:px-1.5"
     >
       <!-- {#if peer.user.replace(/^userid:/, "") === window.ipnProfile?.Config?.UserProfile?.ID?.toString()}
-        <Badge class="flex gap-1 items-center text-[10px] h-5 px-1.5">
+        <Badge class="flex gap-1 items-center">
           Owner
         </Badge>
       {/if} -->
 
-      {#if peer.tailscaleSSHEnabled}
+      {#if peer.expired}
         <Badge
           variant="outline"
-          class="flex gap-1 items-center text-[10px] h-5 px-1.5"
+          class="flex gap-1 items-center border-destructive text-destructive"
         >
+          <ClockAlert class="size-2.5" />
+          <span>Expired</span>
+        </Badge>
+      {/if}
+
+      {#if peer.tailscaleSSHEnabled}
+        <Badge variant="outline" class="flex gap-1 items-center">
           <Terminal class="size-2.5" />
           <span>SSH</span>
         </Badge>
       {/if}
 
       {#if peer.routes?.find((i) => i === "0.0.0.0/0") || peer.routes?.find((i) => i === "::/0")}
-        <Badge
-          variant="outline"
-          class="flex gap-1 items-center text-[10px] h-5 px-1.5"
-        >
+        <Badge variant="outline" class="flex gap-1 items-center">
           <DoorOpen class="size-2.5" />
           <span>Exit Node</span>
         </Badge>
       {/if}
+
+      {#each peer.tags || [] as tag}
+        <Badge variant="secondary">
+          {tag}
+        </Badge>
+      {/each}
     </div>
   </Table.Cell>
 
@@ -163,33 +201,77 @@
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Content align="end" class="w-[160px]">
-        <DropdownMenu.Item
-          class="text-xs cursor-pointer"
-          disabled={!peer.online || !peer.tailscaleSSHEnabled}
-          onclick={() => handleConnect("ssh")}
-        >
-          <Terminal class="mr-2 size-3" />
-          SSH
-        </DropdownMenu.Item>
+        <DropdownMenu.Group>
+          <DropdownMenu.Item
+            class="text-xs cursor-pointer"
+            disabled={!peer.online || !peer.tailscaleSSHEnabled}
+            onclick={() => handleConnect("ssh")}
+          >
+            <Terminal class="mr-2 size-3" />
+            SSH
+          </DropdownMenu.Item>
 
-        <DropdownMenu.Item
-          class="text-xs cursor-pointer"
-          disabled={!peer.online || peer.os === "js"}
-          onclick={() => handleConnect("vnc")}
-        >
-          <ScreenShare class="mr-2 size-3" />
-          VNC
-        </DropdownMenu.Item>
+          <DropdownMenu.Item
+            class="text-xs cursor-pointer"
+            disabled={!peer.online || peer.os === "js"}
+            onclick={() => handleConnect("vnc")}
+          >
+            <ScreenShare class="mr-2 size-3" />
+            VNC
+          </DropdownMenu.Item>
 
-        <DropdownMenu.Item
-          class="text-xs cursor-pointer"
-          disabled={!peer.online || peer.os === "js"}
-          onclick={() => handleConnect("rdp")}
-        >
-          <ScreenShare class="mr-2 size-3" />
-          RDP
-        </DropdownMenu.Item>
+          <DropdownMenu.Item
+            class="text-xs cursor-pointer"
+            disabled={!peer.online || peer.os === "js"}
+            onclick={() => handleConnect("rdp")}
+          >
+            <ScreenShare class="mr-2 size-3" />
+            RDP
+          </DropdownMenu.Item>
+        </DropdownMenu.Group>
+
+        <DropdownMenu.Separator />
+
+        <DropdownMenu.Group>
+          <DropdownMenu.Item
+            class="text-xs cursor-pointer hover:!text-red-600"
+            disabled={typeof $selfserviceCap === "undefined" ||
+              !isOwned ||
+              peer.expired}
+            onclick={() => confirmExpire?.open()}
+          >
+            <ShieldOff class="mr-2 size-3" />
+            Expire Session
+          </DropdownMenu.Item>
+
+          <DropdownMenu.Item
+            class="text-xs cursor-pointer hover:!text-red-600"
+            disabled={typeof $selfserviceCap === "undefined" ||
+              !$selfserviceCap?.nodeDeletion ||
+              !isOwned}
+            onclick={() => confirmDelete?.open()}
+          >
+            <Trash class="mr-2 size-3" />
+            Delete
+          </DropdownMenu.Item>
+        </DropdownMenu.Group>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </Table.Cell>
 </Table.Row>
+
+<ConfirmAction
+  bind:this={confirmExpire}
+  action={() => {
+    SelfService.expireNode(peer.id);
+    confirmExpire?.close();
+  }}
+/>
+
+<ConfirmAction
+  bind:this={confirmDelete}
+  action={() => {
+    SelfService.deleteNode(peer.id);
+    confirmDelete?.close();
+  }}
+/>

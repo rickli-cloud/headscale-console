@@ -1,45 +1,51 @@
-import type { Component } from "svelte";
+import { mount, unmount, type Component } from "svelte";
 
-export type AppRoutes = { path: string | RegExp; component: Component }[];
+export type AppRoute = { path: string | RegExp; component: Component };
 
-export function getPathParams(path: string): string {
-  if (/^#/.test(path)) path = path.replace(/^#/, "");
+export class AppRouter {
+  protected mountedComponent?: object;
 
-  const splitRoute = path.split(/\?/g);
+  public readonly routes: AppRoute[] = [];
+  public fallbackComponent: Component;
+  public target: HTMLElement;
 
-  if (splitRoute.length === 1) return "";
+  public constructor(data: {
+    target: HTMLElement;
+    fallbackComponent: Component;
+  }) {
+    this.target = data.target;
+    this.fallbackComponent = data.fallbackComponent;
 
-  return splitRoute[splitRoute.length - 1];
-}
-
-export function getPathClean(path: string): string {
-  if (/^#/.test(path)) path = path.replace(/^#/, "");
-
-  const splitRoute = path.split(/\?/g);
-
-  if (splitRoute.length === 1) return path;
-
-  // Must have another "?" in the URL
-  return splitRoute.filter((_, i, arr) => i !== arr.length - 1).join("?");
-}
-
-export function getRouteComponent(routes: AppRoutes, path: string): Component {
-  path = getPathClean(path);
-
-  console.debug("getRouteComponent", path, routes);
-
-  for (const route of routes) {
-    if (
-      (typeof route.path === "string" && route.path == path) ||
-      (route.path instanceof RegExp && route.path.test(path))
-    ) {
-      return route.component;
-    }
+    window.addEventListener("hashchange", () => this.resolve());
+    window.addEventListener("popstate", () => this.resolve());
+    // window.addEventListener("load", () => this.resolve());
   }
 
-  // Fallback
-  const route = routes.find(({ path }) => path === "*");
-  if (route) return route.component;
+  public get currentPath(): string {
+    return window.location.hash.replace(/^#/, "").replace(/^\/?/, "/");
+  }
 
-  throw new Error("Failed to find a route");
+  public goto(url: URL) {
+    history.pushState(null, "", url.toString());
+    this.resolve();
+  }
+
+  public resolve() {
+    if (this.mountedComponent) unmount(this.mountedComponent);
+
+    let route = this.routes.find(
+      (route) =>
+        (typeof route.path === "string" && route.path == this.currentPath) ||
+        (route.path instanceof RegExp && route.path.test(this.currentPath))
+    );
+
+    this.mountedComponent = mount(
+      route?.component ? route.component : this.fallbackComponent,
+      { target: this.target }
+    );
+  }
+
+  public unmount() {
+    if (this.mountedComponent) unmount(this.mountedComponent);
+  }
 }

@@ -959,6 +959,8 @@ async fn connect(
 
     let mut connector = ClientConnector::new(config).with_server_addr(addr);
 
+    let server_name = ServerName::try_from(addr.ip().to_owned()).expect("Invalid server name");
+
     if let Some(clipboard_backend) = clipboard_backend {
         connector.attach_static_channel(CliprdrClient::new(Box::new(clipboard_backend)));
     }
@@ -976,17 +978,13 @@ async fn connect(
 
     debug!("TLS upgrade");
 
-    let server_name = ServerName::try_from(addr.ip().to_owned()).expect("Invalid server name");
-
     let mut config = rustls::client::ClientConfig::builder()
         .dangerous()
         .with_custom_certificate_verifier(std::sync::Arc::new(danger::NoCertificateVerification))
         .with_no_client_auth();
 
     // Disable TLS resumption because it’s not supported by some services such as CredSSP.
-    //
     // > The CredSSP Protocol does not extend the TLS wire protocol. TLS session resumption is not supported.
-    //
     // source: https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cssp/385a7489-d46b-464c-b224-f7340e308a5c
     config.resumption = rustls::client::Resumption::disabled();
 
@@ -1009,7 +1007,7 @@ async fn connect(
         extract_tls_server_public_key(cert).expect("peer certificate parsing error")
     };
 
-    info!("TLS client connection created successfully");
+    debug!("TLS upgrade completed");
 
     let upgraded = ironrdp_futures::mark_as_upgraded(should_upgrade, &mut connector);
 

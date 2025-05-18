@@ -1,0 +1,11 @@
+version: v2
+plugins:
+  # Generate Go types
+  - remote: buf.build/protocolbuffers/go:v1.36.6
+    out: ../gen/go
+    opt: paths=source_relative
+
+  # Generate Go gRPC stubs
+  - remote: buf.build/grpc/go:v1.5.1
+    out: ../gen/go
+    opt: paths=source_relative

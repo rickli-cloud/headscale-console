@@ -101,11 +101,13 @@
       throw `Failed to connect: ` + e;
     });
 
+    console.debug({ rawChannel });
+
     session = await userInteractionService.connect({
       username,
       password,
       serverDomain,
-      destination: `${hostname}:${port}`,
+      destination: rawChannel.remoteAddr,
       dataChannel: rawChannel,
       desktopSize: new DesktopSize(el.scrollWidth, el.scrollHeight),
       extensions: [],

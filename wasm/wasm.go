@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 // Complete TCP implementation & "routeAll" options by:
-// Copyright (c) conblem
-// SPDX-License-Identifier: BSD-3-Clause
+// Copyright (c) conblem BSD-3-Clause
 
 // The wasm package builds a WebAssembly module that provides a subset of
 // Tailscale APIs to JavaScript.
@@ -26,12 +25,14 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"strconv"
 	"strings"
 	"syscall/js"
 	"time"
 
 	"golang.org/x/crypto/ssh"
+	"tailscale.com/client/local"
 	"tailscale.com/control/controlclient"
 	"tailscale.com/ipn"
 	"tailscale.com/ipn/ipnlocal"
@@ -98,6 +99,12 @@ func newIPN(jsConfig js.Value) map[string]any {
 		routeAll = jsRouteAll.Bool()
 	}
 
+	var advertiseTags []string
+	if jsAdvertiseTags := jsConfig.Get("advertiseTags"); jsAdvertiseTags.Type() == js.TypeString {
+		advertiseTags = strings.Split(jsAdvertiseTags.String(), ";")
+	}
+	log.Printf("AdvertiseTags: %v", advertiseTags)
+
 	lpc := getOrCreateLogPolicyConfig(store)
 	c := logtail.Config{
 		Collection: lpc.Collection,
@@ -149,7 +156,7 @@ func newIPN(jsConfig js.Value) map[string]any {
 
 	logid := lpc.PublicID
 	srv := ipnserver.New(logf, logid, sys.NetMon.Get())
-	lb, err := ipnlocal.NewLocalBackend(logf, logid, sys, controlclient.LoginEphemeral)
+	lb, err := ipnlocal.NewLocalBackend(logf, logid, sys, controlclient.LoginDefault)
 	if err != nil {
 		log.Fatalf("ipnlocal.NewLocalBackend: %v", err)
 	}
@@ -159,24 +166,20 @@ func newIPN(jsConfig js.Value) map[string]any {
 	srv.SetLocalBackend(lb)
 
 	jsIPN := &jsIPN{
-		dialer:     dialer,
-		srv:        srv,
-		lb:         lb,
-		controlURL: controlURL,
-		authKey:    authKey,
-		hostname:   hostname,
-		routeAll:   routeAll,
+		dialer:        dialer,
+		srv:           srv,
+		lb:            lb,
+		controlURL:    controlURL,
+		authKey:       authKey,
+		hostname:      hostname,
+		routeAll:      routeAll,
+		advertiseTags: advertiseTags,
 	}
 
 	return map[string]any{
 		"run": js.FuncOf(func(this js.Value, args []js.Value) any {
 			if len(args) != 1 || args[0].Type() != js.TypeObject {
-				log.Fatal(`Usage: run({
-					notifyState(state: int): void,
-					notifyNetMap(netMap: object): void,
-					notifyBrowseToURL(url: string): void,
-					notifyPanicRecover(err: string): void,
-				})`)
+				log.Fatal(`Usage: run({ ... })`)
 				return nil
 			}
 			jsIPN.run(args[0])
@@ -209,40 +212,38 @@ func newIPN(jsConfig js.Value) map[string]any {
 				args[2])
 		}),
 		"fetch": js.FuncOf(func(this js.Value, args []js.Value) any {
-			if len(args) != 1 {
-				log.Printf("Usage: fetch(url)")
+			if len(args) != 1 || args[0].Type() != js.TypeObject {
+				log.Printf("Usage: fetch({ ... })")
 				return nil
 			}
-
-			url := args[0].String()
-			return jsIPN.fetch(url)
+			return jsIPN.fetch(args[0])
 		}),
 		"tcp": js.FuncOf(func(this js.Value, args []js.Value) any {
 			if len(args) != 1 || args[0].Type() != js.TypeObject {
-				log.Fatal(`Usage: tcp({
- 					hostname: string
-      				port: number
-      				readCallback: (data: Uint8Array) => void,
-      				connectTimeoutSeconds?: number
-					writeBufferSizeInBytes?: number
-      				readBufferSizeInBytes?: number
-				})`)
+				log.Fatal(`Usage: tcp({ ... })`)
 				return nil
 			}
-
 			return jsIPN.tcp(args[0])
+		}),
+		"resolve": js.FuncOf(func(this js.Value, args []js.Value) any {
+			if len(args) != 1 || args[0].Type() != js.TypeString {
+				log.Fatal(`Usage: resolve(hostname)`)
+				return nil
+			}
+			return jsIPN.resolve(args[0])
 		}),
 	}
 }
 
 type jsIPN struct {
-	dialer     *tsdial.Dialer
-	srv        *ipnserver.Server
-	lb         *ipnlocal.LocalBackend
-	controlURL string
-	authKey    string
-	hostname   string
-	routeAll   bool
+	dialer        *tsdial.Dialer
+	srv           *ipnserver.Server
+	lb            *ipnlocal.LocalBackend
+	controlURL    string
+	authKey       string
+	hostname      string
+	routeAll      bool
+	advertiseTags []string
 }
 
 var jsIPNState = map[ipn.State]string{
@@ -292,7 +293,9 @@ func (i *jsIPN) run(jsCallbacks js.Value) {
 						NodeKey:    nm.NodeKey.String(),
 						MachineKey: nm.MachineKey.String(),
 						CreatedAt:  nm.SelfNode.Created().String(),
+						IPNVersion: nm.SelfNode.Hostinfo().IPNVersion(),
 					},
+					Tags:          nm.SelfNode.Tags(),
 					MachineStatus: jsMachineStatus[nm.GetMachineStatus()],
 				},
 				Users: nm.UserProfiles,
@@ -313,19 +316,23 @@ func (i *jsIPN) run(jsCallbacks js.Value) {
 							MachineKey: p.Machine().String(),
 							NodeKey:    p.Key().String(),
 							CreatedAt:  p.Created().String(),
+							IPNVersion: p.Hostinfo().IPNVersion(),
 						},
 						LastSeen:            p.LastSeen().String(),
 						OS:                  p.Hostinfo().OS(),
 						OSVersion:           p.Hostinfo().OSVersion(),
-						IPNVersion:          p.Hostinfo().IPNVersion(),
 						User:                p.User().String(),
 						Tags:                p.Tags(),
 						Routes:              p.Hostinfo().RoutableIPs(),
-						Online:              p.Online().Clone(),
+						Online:              *p.Online().Clone(),
+						Expired:             p.Expired(),
 						TailscaleSSHEnabled: p.Hostinfo().TailscaleSSHEnabled(),
+						ID:                  strconv.FormatInt(int64(p.ID()), 10),
+						CapMap:              p.CapMap().AsMap(),
 					}
 				}),
 				LockedOut: nm.TKAEnabled && nm.SelfNode.KeySignature().Len() == 0,
+				Domain:    nm.MagicDNSSuffix(),
 			}
 			if jsonNetMap, err := json.Marshal(jsNetMap); err == nil {
 				jsCallbacks.Call("notifyNetMap", string(jsonNetMap))
@@ -341,10 +348,12 @@ func (i *jsIPN) run(jsCallbacks js.Value) {
 	go func() {
 		err := i.lb.Start(ipn.Options{
 			UpdatePrefs: &ipn.Prefs{
-				ControlURL:  i.controlURL,
-				RouteAll:    i.routeAll,
-				WantRunning: true,
-				Hostname:    i.hostname,
+				ControlURL:    i.controlURL,
+				RouteAll:      i.routeAll,
+				Hostname:      i.hostname,
+				AdvertiseTags: i.advertiseTags,
+				WantRunning:   true,
+				CorpDNS:       true,
 			},
 			AuthKey: i.authKey,
 		})
@@ -529,6 +538,7 @@ func (s *jsTCPSession) readLoop() {
 
 func (s *jsTCPSession) jsWrapper() any {
 	return map[string]any{
+		"remoteAddr": s.conn.RemoteAddr().String(),
 		/**
 		 * Closes the TCP connetion
 		 *
@@ -727,14 +737,44 @@ func (s *jsSSHSession) Resize(rows, cols int) error {
 	return s.session.WindowChange(rows, cols)
 }
 
-func (i *jsIPN) fetch(url string) js.Value {
+func (i *jsIPN) fetch(opt js.Value) js.Value {
 	return makePromise(func() (any, error) {
+		reqUrl := opt.Get("url")
+		if reqUrl.Type() != js.TypeString {
+			return nil, errors.New("Request url is missing")
+		}
+		parsedUrl, err := url.Parse(reqUrl.String())
+		if err != nil {
+			return nil, err
+		}
+
+		rawMethod := opt.Get("method")
+		var method string
+		if rawMethod.Type() == js.TypeString {
+			method = rawMethod.String()
+		} else {
+			method = "GET"
+		}
+
+		rawHeaders := opt.Get("headers")
+		var headers map[string][]string
+		if rawHeaders.Type() == js.TypeObject {
+			headers = copyObjectToGo(rawHeaders)
+		}
+
 		c := &http.Client{
 			Transport: &http.Transport{
 				DialContext: i.dialer.UserDial,
 			},
 		}
-		res, err := c.Get(url)
+
+		res, err := c.Do(&http.Request{
+			URL:    parsedUrl,
+			Method: method,
+			Header: headers,
+			// Body: , // TODO
+		})
+
 		if err != nil {
 			return nil, err
 		}
@@ -757,6 +797,30 @@ func (i *jsIPN) fetch(url string) js.Value {
 	})
 }
 
+var localClient local.Client
+
+func (i *jsIPN) resolve(hostname js.Value) js.Value {
+	return makePromise(func() (any, error) {
+		if hostname.Type() != js.TypeString {
+			return nil, errors.New("Hostname must be a string")
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		res, resolvers, err := localClient.QueryDNS(ctx, hostname.String(), "A")
+
+		if err != nil {
+			return nil, err
+		}
+
+		return map[string]any{
+			"result":    res,
+			"resolvers": resolvers,
+		}, nil
+	})
+}
+
 type termWriter struct {
 	f js.Value
 }
@@ -768,10 +832,11 @@ func (w termWriter) Write(p []byte) (n int, err error) {
 }
 
 type jsNetMap struct {
-	Self      jsNetMapSelfNode                       `json:"self"`
-	Peers     []jsNetMapPeerNode                     `json:"peers"`
-	Users     map[tailcfg.UserID]tailcfg.UserProfile `json:"users"`
-	LockedOut bool                                   `json:"lockedOut"`
+	Domain    string                                     `json:"domain"`
+	Self      jsNetMapSelfNode                           `json:"self"`
+	Peers     []jsNetMapPeerNode                         `json:"peers"`
+	Users     map[tailcfg.UserID]tailcfg.UserProfileView `json:"users"`
+	LockedOut bool                                       `json:"lockedOut"`
 }
 
 type jsNetMapNode struct {
@@ -780,24 +845,28 @@ type jsNetMapNode struct {
 	MachineKey string   `json:"machineKey"`
 	NodeKey    string   `json:"nodeKey"`
 	CreatedAt  string   `json:"createdAt"`
+	IPNVersion string   `json:"ipnVersion"`
 }
 
 type jsNetMapSelfNode struct {
 	jsNetMapNode
-	MachineStatus string `json:"machineStatus"`
+	MachineStatus string              `json:"machineStatus"`
+	Tags          views.Slice[string] `json:"tags"`
 }
 
 type jsNetMapPeerNode struct {
 	jsNetMapNode
-	LastSeen            string                    `json:"lastSeen"`
-	OS                  string                    `json:"os"`
-	OSVersion           string                    `json:"osVersion"`
-	IPNVersion          string                    `json:"ipnVersion"`
-	User                string                    `json:"user"`
-	Tags                views.Slice[string]       `json:"tags"`
-	Routes              views.Slice[netip.Prefix] `json:"routes"`
-	Online              *bool                     `json:"online,omitempty"`
-	TailscaleSSHEnabled bool                      `json:"tailscaleSSHEnabled"`
+	LastSeen            string                                          `json:"lastSeen"`
+	OS                  string                                          `json:"os"`
+	OSVersion           string                                          `json:"osVersion"`
+	User                string                                          `json:"user"`
+	Tags                views.Slice[string]                             `json:"tags"`
+	Routes              views.Slice[netip.Prefix]                       `json:"routes"`
+	Online              bool                                            `json:"online"`
+	Expired             bool                                            `json:"expired"`
+	ID                  string                                          `json:"id"`
+	TailscaleSSHEnabled bool                                            `json:"tailscaleSSHEnabled"`
+	CapMap              map[tailcfg.NodeCapability][]tailcfg.RawMessage `json:"capMap"`
 }
 
 type jsStateStore struct {
@@ -917,4 +986,32 @@ func (t *noCORSTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		resp.Status = http.StatusText(http.StatusOK)
 	}
 	return resp, err
+}
+
+func copyObjectToGo(jsObj js.Value) map[string][]string {
+	goMap := make(map[string][]string)
+
+	keys := js.Global().Get("Object").Call("keys", jsObj)
+
+	for i := 0; i < keys.Length(); i++ {
+		key := keys.Index(i).String()
+		val := jsObj.Get(key)
+
+		if !val.InstanceOf(js.Global().Get("Array")) {
+			continue
+		}
+
+		arr := []string{}
+		for j := 0; j < val.Length(); j++ {
+			elem := val.Index(j)
+			if elem.Type() != js.TypeString {
+				continue
+			}
+			arr = append(arr, elem.String())
+		}
+
+		goMap[key] = arr
+	}
+
+	return goMap
 }

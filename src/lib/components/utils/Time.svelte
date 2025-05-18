@@ -2,12 +2,12 @@
   import { onMount } from "svelte";
 
   interface Props {
-    createdAt: Date;
+    update: () => number;
   }
 
-  let { createdAt }: Props = $props();
+  let { update }: Props = $props();
 
-  let stamp = $state<string>();
+  let stamp = $state<string>(formatDuration(update()));
 
   function formatDuration(ms: number): string {
     const map: (number | null)[] = [
@@ -31,17 +31,13 @@
       .join(":");
   }
 
-  function update() {
-    stamp = formatDuration(Date.now() - createdAt.getTime());
-  }
-
   onMount(() => {
-    update();
-
-    const updateIntervall = setInterval(update, 1000);
+    const updateInterval = setInterval(() => {
+      stamp = formatDuration(update());
+    }, 1000);
 
     return () => {
-      clearInterval(updateIntervall);
+      clearInterval(updateInterval);
     };
   });
 </script>

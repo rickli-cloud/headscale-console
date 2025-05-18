@@ -28,6 +28,10 @@ dist-ssr
 
 *.wasm
 
+# Config
+
+public/config.json
+config.json
 
 # Added by cargo
 

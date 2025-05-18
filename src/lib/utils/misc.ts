@@ -21,6 +21,7 @@ export function joinUrl(base: URL | Location, path: string) {
   return str;
 }
 
+/** Returns a 2 char name mostly used for avatar fallback */
 export function shortName(name: string | number | undefined) {
   if (typeof name !== "number" && !name?.length) return "?";
   const split = String(name).split(/\s+/g);

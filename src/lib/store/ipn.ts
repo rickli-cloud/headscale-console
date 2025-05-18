@@ -1,15 +1,49 @@
-import { writable } from "svelte/store";
+import { get, writable } from "svelte/store";
 
 import type { Ipn } from "$lib/types/ipn.d";
 import { hex2a } from "$lib/utils/misc";
+import { selfserviceCap, selfserviceHostname } from "./selfservice";
+import { SelfService } from "$lib/api/self-service";
+import { appConfig } from "./config";
 
 const statePrefix = "ipn-state-";
 const currentProfileKey = "_current-profile";
 const profileRegex = new RegExp(`^${statePrefix}profile-`, "i");
 
-export const netMap = writable<IPNNetMap | undefined>(undefined);
+export const netMap = writable<IPNNetMap | undefined>();
 
-netMap.subscribe((netMap) => console.debug("netMap:", netMap));
+let selfserviceCapFetchLock = false;
+
+netMap.subscribe(async (netMap) => {
+  console.debug("netMap:", netMap);
+
+  document.title = netMap?.domain || "";
+
+  const selfservicePeer = netMap?.peers.filter(
+    (peer) =>
+      peer.online &&
+      peer?.name &&
+      peer.name.split(/\./)[0] === get(appConfig).selfserviceHostname
+  )[0];
+
+  let cap = get(selfserviceCap);
+
+  if (!selfservicePeer) {
+    if (cap) selfserviceCap.set(undefined);
+    return;
+  }
+
+  selfserviceHostname.set(selfservicePeer.name);
+
+  if (cap || selfserviceCapFetchLock) return;
+  selfserviceCapFetchLock = true;
+  try {
+    cap = await SelfService.getCap();
+    selfserviceCap.set(cap);
+  } finally {
+    selfserviceCapFetchLock = false;
+  }
+});
 
 export class IpnStateStorage {
   public static setState(id: string, value: string) {

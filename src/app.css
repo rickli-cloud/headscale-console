@@ -116,6 +116,12 @@
   }
 }
 
+@layer utilities {
+  .link {
+    @apply text-blue-600 visited:text-blue-700 hover:underline;
+  }
+}
+
 .terminal {
   @apply h-full w-full;
 }
@@ -124,4 +130,8 @@ label.required::after,
 label:has(+ input[required=""])::after {
   @apply mx-0.5 text-current opacity-60;
   content: "*";
+}
+
+button[data-dialog-close=""] {
+  @apply !mt-0;
 }
