@@ -1,5 +1,7 @@
 FROM golang:latest AS build
 
+ARG HEADSCALE_CONSOLE_VERSION
+
 WORKDIR /work
 
 COPY internal/ internal/
@@ -11,7 +13,7 @@ COPY go.* ./
 COPY dist/ dist/
 COPY frontend.go.tmpl dist/frontend.go
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-${HEADSCALE_CONSOLE_VERSION}" go build main.go
 
 
 FROM scratch

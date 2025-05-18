@@ -1,0 +1,101 @@
+version: "3.9" # legacy
+name: headscale
+
+networks:
+  proxy:
+    name: proxy
+    driver: bridge
+
+volumes:
+  letsencrypt:
+    name: traefik-letsencrypt
+  selfservice-data:
+    name: selfservice-data
+  headscale-data:
+    name: headscale-data
+
+services:
+  traefik:
+    image: traefik:${TRAEFIK_VERSION:-latest}
+    container_name: traefik
+    pull_policy: always
+    restart: always
+    command:
+      - --ping=true
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=proxy
+      - --entrypoints.http.address=:80
+      - --entrypoints.https.address=:443
+      - --entrypoints.http.http.redirections.entrypoint.to=https
+      - --entrypoints.http.http.redirections.entrypoint.scheme=https
+      - --entrypoints.http.http.redirections.entrypoint.permanent=true
+      - --certificatesresolvers.letsencrypt.acme.tlschallenge=true # Use ACME TLS challenge
+      - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
+      # - --serversTrnasport.insecureSkipVerify=true # if you're using self-signed certificates for upstream services
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt:rw
+    ports:
+      - ${TRAEFIK_LISTEN_ADDR:-0.0.0.0}:80:80/tcp
+      - ${TRAEFIK_LISTEN_ADDR:-0.0.0.0}:443:443/tcp
+    networks:
+      - proxy
+
+  headscale:
+    image: headscale/headscale:${HEADSCALE_VERSION:?required}
+    container_name: headscale
+    pull_policy: always
+    restart: always
+    command: serve
+    volumes:
+      - ./config.yaml:/etc/headscale/config.yaml:ro
+      - headscale-socket:/var/run/headscale:rw
+      - headscale-data:/var/lib/headscale:rw
+    expose:
+      - 8080 #  Main server
+      - 9090 #  Metrics
+      - 50443 # GRPC
+    ports:
+      - 0.0.0.0:3478:3478/udp # stun
+    networks:
+      - proxy
+    labels:
+      traefik.enable: true
+      traefik.http.routers.headscale.rule: Host(`${HEADSCALE_SERVER_HOSTNAME?required}`)
+      traefik.http.routers.headscale.entrypoints: https
+      traefik.http.routers.headscale.tls.certresolver: letsencrypt
+      traefik.http.services.headscale.loadbalancer.server.port: 8080
+    depends_on:
+      traefik:
+        condition: service_started
+
+  headscale-console:
+    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-unstable}
+    container_name: headscale-console
+    pull_policy: always
+    restart: always
+    command: serve
+    expose:
+      - 3000
+    networks:
+      - proxy
+    labels:
+      traefik.enable: true
+      traefik.http.routers.headscale-console.rule: Host(`${HEADSCALE_SERVER_HOSTNAME?required}`) && PathPrefix(`/admin`)
+      traefik.http.routers.headscale-console.entrypoints: https
+      traefik.http.routers.headscale-console.tls.certresolver: letsencrypt
+      traefik.http.services.headscale-console.loadbalancer.server.port: 3000
+
+  headscale-selfservice:
+    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-unstable}
+    container_name: headscale-selfservice
+    pull_policy: always
+    restart: always
+    command: selfservice --control-url https://${HEADSCALE_SERVER_HOSTNAME?required}
+    volumes:
+      - headscale-socket:/var/run/headscale:ro
+      - selfservice-data:/data:rw
+    depends_on:
+      headscale:
+        condition: service_started

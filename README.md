@@ -1,7 +1,7 @@
 # Headscale Console
 
 [![Unstable release](https://github.com/rickli-cloud/headscale-console/actions/workflows/unstable.yaml/badge.svg)](https://github.com/rickli-cloud/headscale-console/actions/workflows/unstable.yaml)
-![Current Headscale Version](https://img.shields.io/badge/Headscale-0.26.0-blue)
+![Current Headscale Version](https://img.shields.io/badge/Headscale-v0.26.0-blue)
 
 A web-based interface supporting SSH, VNC and RDP with optional self-service capabilities for [`@juanfont/headscale`](https://github.com/juanfont/headscale).  
 Connect to your nodes directly from the browser using WebAssembly.
@@ -34,12 +34,39 @@ A minimal Docker image is available, featuring a Go web server to serve the stat
 
 ```sh
 # static server
-docker run -it -p 3000:3000 ghcr.io/rickli-cloud/headscale-console:latest headscale-console serve --help
+docker run -it -p 3000:3000 ghcr.io/rickli-cloud/headscale-console:unstable serve --help
 
 # self-service tsnet server
 # Note: This requires the Headscale Unix socket to be mounted into the container
-docker run -it -p 3000:3000 -v ./selfservice-data:/data:rw -v headscale-socket:/var/run/headscale:ro ghcr.io/rickli-cloud/headscale-console:latest headscale-console selfservice --help
+docker run -it -v selfservice-data:/data:rw -v headscale-socket:/var/run/headscale:ro ghcr.io/rickli-cloud/headscale-console:unstable selfservice --help
 ```
+
+#### Docker Compose
+
+A full deployment of traefik, headscale, headscale-console & headscale-selfservice can be found in [`docker-compose.yaml`](https://github.com/rickli-cloud/headscale-console/tree/main/docker-compose.yaml). For production deployments it is recommended to use a self-signed certificate for headscale and embed it inside traefik's ca-certificates (requires custom image) or enable insecureSkipVerify in traefik.
+
+1. Configure headscale in `config.yaml`
+
+   See [`config-example.yaml`](https://github.com/juanfont/headscale/blob/v0.26.0/config-example.yaml)
+
+2. Configure the environment in `.env`:
+
+   ```sh
+   # Required
+   HEADSCALE_SERVER_HOSTNAME=headscale.example.com
+   HEADSCALE_VERSION=0.26.0
+
+   # Optional
+   HEADSCALE_CONSOLE_VERSION=unstable
+   TRAEFIK_LISTEN_ADDR=0.0.0.0
+   TRAEFIK_VERSION=latest
+   ```
+
+3. Start it all up:
+
+   ```sh
+   docker compose up -d
+   ```
 
 ### Static Hosting
 
@@ -66,7 +93,7 @@ Refer to the GitHub Actions workflows for the automated build process. WASM bina
 
 ### Frontend
 
-> Requires WASM
+> Requires WASM builds
 
 Install dependencies:
 
@@ -89,7 +116,7 @@ deno task build
 
 ### Docker Image
 
-> Requires a frontend build
+> Requires frontend build
 
 ```sh
 docker build . -t headscale-console:custom
@@ -97,7 +124,7 @@ docker build . -t headscale-console:custom
 
 ### Standalone Executable
 
-> Requires a frontend build
+> Requires frontend build
 
 If you do not plan on running the console inside of docker you need to build the executable manually.
 
