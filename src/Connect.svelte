@@ -11,6 +11,7 @@
 
   onMount(() => {
     try {
+      document.body.classList.add("overflow-hidden");
       const params = new URLSearchParams(window.location.search);
       const rawConnectParams = params.get("opt");
 
@@ -20,10 +21,14 @@
     } catch (e) {
       err = e;
     }
+
+    return () => {
+      document.body.classList.remove("overflow-hidden");
+    };
   });
 </script>
 
-<main class="h-screen w-screen">
+<main class="h-screen w-screen overflow-hidden">
   {#if connectParams?.proto === "ssh"}
     <Xterm hostname={connectParams.host!} />
   {:else if connectParams?.proto === "vnc"}

@@ -5,6 +5,7 @@ Source:  https://github.com/Devolutions/IronRDP/blob/bdde2c76ded7315f7bc91d81a09
 Changes made:
 - Removed custom element
 - "capturingInputs" simplified by directly targeting canvas instead of inner
+- Added `overflow: hidden !important` to screen-wrapper
 -->
 
 <script lang="ts">
@@ -798,6 +799,7 @@ Changes made:
 <style>
   .screen-wrapper {
     position: relative;
+    overflow: hidden !important;
   }
 
   .capturing-inputs {

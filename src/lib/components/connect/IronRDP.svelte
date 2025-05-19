@@ -14,6 +14,7 @@
   } from "$lib/components/ironrdp";
 
   import { IpnRawTcpChannel } from "$lib/api/tsconnect";
+  import { debounce } from "$lib/utils/misc";
 
   interface Props {
     hostname: string;
@@ -75,9 +76,11 @@
 
   onMount(() => {
     window.addEventListener("beforeunload", beforeUnloadHandler);
+    window.addEventListener("resize", resizeHandler);
 
     return () => {
       window.removeEventListener("beforeunload", beforeUnloadHandler);
+      window.removeEventListener("resize", resizeHandler);
 
       userInteractionService?.shutdown();
       rawChannel?.close();
@@ -137,6 +140,13 @@
     height: number;
     width: number;
   }
+
+  const resizeHandler = debounce(() => {
+    const width = window.innerWidth >= 0 ? window.innerWidth : 0;
+    const height = window.innerHeight >= 0 ? window.innerHeight : 0;
+    console.debug("resize", { width, height });
+    userInteractionService?.resize(width, height);
+  });
 </script>
 
 {#if !isLoggedIn}

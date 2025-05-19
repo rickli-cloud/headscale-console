@@ -102,7 +102,7 @@ impl Default for SessionBuilderInner {
             remote_received_format_list_callback: None,
             force_clipboard_update_callback: None,
 
-            use_display_control: false,
+            use_display_control: true,
         }
     }
 }

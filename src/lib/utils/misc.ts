@@ -28,3 +28,14 @@ export function shortName(name: string | number | undefined) {
   if (split.length === 2) return `${split[0][0]}${split[1][0]}`.toUpperCase();
   return String(name).slice(0, 2).toUpperCase();
 }
+
+export function debounce<T extends Array<any>>(
+  func: (...args: T) => void,
+  timeout: number = 500
+) {
+  let timer: NodeJS.Timeout;
+  return (...args: T) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => func(...args), timeout);
+  };
+}

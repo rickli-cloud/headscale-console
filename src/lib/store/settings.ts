@@ -25,8 +25,10 @@ userSettings.subscribe((settings) => {
   if (typeof settings !== "object") return;
   for (const key in settings) {
     if (settings[key] === null || settings[key] === "false") {
-      localStorage.removeItem(key);
-    } else localStorage.setItem(userSettingsStoragePrefix + key, settings[key]);
+      localStorage.removeItem(userSettingsStoragePrefix + key);
+    } else {
+      localStorage.setItem(userSettingsStoragePrefix + key, settings[key]);
+    }
   }
 });
 

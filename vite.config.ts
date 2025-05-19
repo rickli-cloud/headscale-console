@@ -1,19 +1,12 @@
-import { defineConfig, Plugin } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
-import { resolve } from "node:path";
-import { readFileSync } from "node:fs";
+import { defineConfig, Plugin } from "vite";
+import { config } from "dotenv";
 
-// https://vite.dev/config/
-export default defineConfig({
-  base: "",
-  plugins: [versionVirtualModulePlugin(), svelte()],
-  resolve: {
-    alias: {
-      $lib: resolve(__dirname, "src/lib"),
-      $pkg: resolve(__dirname, "wasm/pkg"),
-    },
-  },
-});
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+config();
+const { BASE_PATH = "/" } = process.env;
 
 const pkg: typeof import("./package.json") = JSON.parse(
   new TextDecoder().decode(readFileSync(resolve(__dirname, "package.json")))
@@ -38,3 +31,18 @@ function versionVirtualModulePlugin(): Plugin {
     },
   };
 }
+
+// https://vite.dev/config/
+export default defineConfig(({}) => {
+  return {
+    base: BASE_PATH,
+    plugins: [versionVirtualModulePlugin(), svelte()],
+    resolve: {
+      alias: {
+        $lib: resolve(__dirname, "src/lib"),
+        $pkg: resolve(__dirname, "wasm/pkg"),
+      },
+    },
+    server: {},
+  };
+});
