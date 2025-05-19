@@ -6,7 +6,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 config();
-const { BASE_PATH = "/" } = process.env;
+const {
+  /** @see https://vite.dev/guide/build#relative-base */
+  BASE_PATH = "./",
+} = process.env;
 
 const pkg: typeof import("./package.json") = JSON.parse(
   new TextDecoder().decode(readFileSync(resolve(__dirname, "package.json")))
