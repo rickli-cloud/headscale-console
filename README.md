@@ -3,25 +3,42 @@
 [![Unstable release](https://github.com/rickli-cloud/headscale-console/actions/workflows/unstable.yaml/badge.svg)](https://github.com/rickli-cloud/headscale-console/actions/workflows/unstable.yaml)
 ![Current Headscale Version](https://img.shields.io/badge/Headscale-v0.26.0-blue)
 
-A web-based interface supporting SSH, VNC and RDP with optional self-service capabilities for [`@juanfont/headscale`](https://github.com/juanfont/headscale).  
-Connect to your nodes directly from the browser using WebAssembly.
+**A WebAssembly-powered client for connecting to your Headscale nodes via SSH, VNC, or RDP — directly from the comfort of your browser.** Includes an optional self-service integration for seamless device onboarding and management.
+
+> [!NOTE]  
+> This project is under active development and has not yet reached a stable release.
+> Expect occasional breaking changes until v1.0.0.
 
 ## Features
 
-- **SSH Console**: Secure terminal access to your nodes.
-- **VNC Viewer**: View remote desktops from the browser.
-- **RDP Client**: Experimental support for Remote Desktop via WebAssembly, ideal for connecting to Windows nodes—no additional server required.
-- **Self Service**: Optional self service tsnet server allowing users to manage their own devices with a opt-in approach. It binds directly into the Headscale GRPC UNIX socket and requires minimal setup & maintenance.
+- **SSH Console** — Secure terminal access to your nodes
+- **VNC Viewer** — Remote desktop viewing in the browser
+- **RDP Client** — Secure access to Windows nodes, [inspired by Cloudflare](https://blog.cloudflare.com/browser-based-rdp/), without requiring a additional gateway
+- **Self-Service** — Optional [tsnet](https://tailscale.com/kb/1244/tsnet)-based server allowing users to manage their own devices via an opt-in approach. It connects directly to the Headscale gRPC UNIX socket and requires minimal setup and maintenance.
+- **Stateless** — Integrates into existing infrastructure without the need for a extra database or identity provider
 
-## Deployment
+## Deploy
 
-Due to browser CORS restrictions, the console must either be served from the same domain as Headscale, or Headscale must be configured to return a correct `access-control-allow-origin` header - typically handled via a reverse proxy. The Headscale domain can be changed in the console config.
+### Notes
 
-The WASM client is only able to connect to other nodes over a DERP relay via a websocket. Depending on the setup this might not work correctly. Best results are achieved by using the embedded DERP server of headscale.
+CORS Restrictions:
+
+- The console must be served from the same domain as Headscale **or**
+- Headscale must return the correct `access-control-allow-origin` headers
+
+> typically handled via a reverse proxy
 
 ### Docker
 
 A minimal Docker image is available, featuring a Go web server to serve the static files or to run the self-service API.
+
+```sh
+docker run -it ghcr.io/rickli-cloud/headscale-console:unstable serve --help
+```
+
+```sh
+docker run -it ghcr.io/rickli-cloud/headscale-console:unstable selfservice --help
+```
 
 #### Image Tags
 
@@ -30,20 +47,9 @@ A minimal Docker image is available, featuring a Go web server to serve the stat
 - `x.x.x-pre`: Pre-release versions (potentially unstable)
 - `unstable`: Built on every push to the main branch
 
-#### Example Usage
-
-```sh
-# static server
-docker run -it -p 3000:3000 ghcr.io/rickli-cloud/headscale-console:unstable serve --help
-
-# self-service tsnet server
-# Note: This requires the Headscale Unix socket to be mounted into the container
-docker run -it -v selfservice-data:/data:rw -v headscale-socket:/var/run/headscale:ro ghcr.io/rickli-cloud/headscale-console:unstable selfservice --help
-```
-
 #### Docker Compose
 
-A full deployment of traefik, headscale, headscale-console & headscale-selfservice can be found in [`docker-compose.yaml`](https://github.com/rickli-cloud/headscale-console/tree/main/docker-compose.yaml). For production deployments it is recommended to use a self-signed certificate for headscale and embed it inside traefik's ca-certificates (requires custom image) or enable insecureSkipVerify in traefik.
+A full deployment of traefik, headscale, headscale-console & headscale-selfservice can be found in [`docker-compose.yaml`](https://github.com/rickli-cloud/headscale-console/tree/main/docker-compose.yaml).
 
 1. Configure headscale in `config.yaml`
 
@@ -68,15 +74,18 @@ A full deployment of traefik, headscale, headscale-console & headscale-selfservi
    docker compose up -d
    ```
 
-### Static Hosting
+> [!IMPORTANT]  
+> When deploying for production it is recommended to use TLS between traefik and headscale.
 
-> Everything gets loaded relative to the initial url. It does not matter on what path you serve the app.
+### Static Hosting
 
 Each release includes a downloadable ZIP archive with all required assets for deployment on static web servers (e.g., Nginx, Apache).
 
+> All assets are loaded relative to the initial URL, so it does not matter which path you serve the app from.
+
 ## Configuration
 
-> Configuration is completely **optional**
+> Configuration is **completely optional**
 
 On startup the console tries to load `./config.json`. For the docker image you can mount `/config.json` (or somewhere else defined with the configfile flag).
 
@@ -84,12 +93,11 @@ On startup the console tries to load `./config.json`. For the docker image you c
 
 Currently still in beta and not yet fully documented. See [`src/lib/store/config.ts`](https://github.com/rickli-cloud/headscale-console/tree/main/src/lib/store/config.ts) for now.
 
-## Build from source
+## Building from Source
 
-### WASM
+### WebAssembly
 
-Manual build instructions are available in the [`./wasm`](https://github.com/rickli-cloud/headscale-console/tree/main/wasm) directory.  
-Refer to the GitHub Actions workflows for the automated build process. WASM binaries are also published as action artifacts.
+Manual instructions are available in [`wasm/`](https://github.com/rickli-cloud/headscale-console/tree/main/wasm). CI workflows also publish prebuilt WASM artifacts.
 
 ### Frontend
 
@@ -101,14 +109,13 @@ Install dependencies:
 deno install
 ```
 
-Build the Svelte frontend:
+Build the frontend:
 
 ```sh
 deno task build
 ```
 
-> [!TIP]  
-> This can also be done inside a Docker container:
+> This could also be done inside a Docker container:
 >
 > ```sh
 > docker run -it --rm -v .:/work:rw --workdir /work --entrypoint /bin/sh denoland/deno:latest
@@ -126,76 +133,91 @@ docker build . -t headscale-console:custom
 
 > Requires frontend build
 
-If you do not plan on running the console inside of docker you need to build the executable manually.
+If you do not plan on running the console inside of docker you need to build the executable manually:
 
 ```sh
 cp frontend.go.tmpl dist/frontend.go
 go build main.go
 ```
 
-> This builds a single executable `main` tailored to the OS and architecture of the build machine.
-> If you intend to run it elsewhere, either build it on the target system or adjust the build target accordingly.
+> This builds a native binary for your current OS and architecture.
+> For other platforms, build natively or set appropriate cross-compilation flags.
 
-## Architecture
+## Architecture Overview
 
-> [!NOTE]  
 > The TCP connection (handled by Golang) is abstracted into a `IpnRawTcpChannel` on JS side.
 > It implements the `RTCDataChannel` interface to allow use with NoVNC & IronRDP but has **nothing to do with WebRTC**.
 
 ### SSH
 
-The complete Protocol stack is handled in Golang. Messages are passed thru callbacks from JS to Golang and back.
+Go handles the full protocol stack. JavaScript handles rendering.
 
 ```mermaid
-  sequenceDiagram
-    DERP ->> Golang: Websocket
-    Golang ->> JavaScript: Text
-    JavaScript ->> DOM: Render
+sequenceDiagram
+    DERP ->> Go: WebSocket
+    Go ->> JS: Text
+    JS ->> DOM: Render
 
-    JavaScript -->> Golang: Text
-    Golang -->> DERP: Websocket
+    JS -->> Go: Input
+    Go -->> DERP: WebSocket
 ```
 
 ### VNC
 
-For VNC only the TCP connection is handled in Golang. Protocol layer is handled by NoVNC inside of JS.
+Go handles the TCP layer. JavaScript (NoVNC) manages the VNC protocol.
 
 ```mermaid
-  sequenceDiagram
-    DERP ->> Golang: Websocket
-    Golang ->> JavaScript: TCP data
-    JavaScript ->> DOM: Render
+sequenceDiagram
+    DERP ->> Go: WebSocket
+    Go ->> JS: TCP data
+    JS ->> DOM: Render
 
-    JavaScript -->> Golang: TCP data
-    Golang -->> DERP: Websocket
+    JS -->> Go: TCP data
+    Go -->> DERP: WebSocket
 ```
 
 ### RDP
 
-The TCP connection is handled by Golang. TCP packets are then passed thru JS to the Rust WASM (ironRDP), which is responsible for handling TLS, the RDP protocol & rendering (thru direct DOM access). Due to the passing of data thru multiple languages it gets a little complex and it isn't very efficient, especially as this can only be done thru callbacks & buffering **at every step**.
+Go handles the TCP layer. JavaScript passes packets to the Rust-based WASM module, which handles TLS, RDP, and rendering.
 
 ```mermaid
-  sequenceDiagram
-    DERP ->> Golang: Websocket
-    Golang ->> JavaScript: TCP data
-    JavaScript ->> Rust: TCP data
-
+sequenceDiagram
+    DERP ->> Go: WebSocket
+    Go ->> JS: TCP data
+    JS ->> Rust: TCP data
     Rust ->> DOM: Render
 
-    JavaScript -->> Rust: UserInteraction
-    Rust -->> JavaScript: TCP data
-    JavaScript -->> Golang: TCP data
-    Golang -->> DERP: Websocket
+    JS -->> Rust: UI events
+    Rust -->> JS: TCP data
+    JS -->> Go: TCP data
+    Go -->> DERP: WebSocket
 ```
 
-### Self-Service
+### Self-Service API
 
-Connections to the self-service API are not encrypted with TLS (already uses WSS to relay and Wireguard e2e).
+Reaches out via the DERP relay. Traffic is not encrypted with TLS (already protected by the underlying WireGuard tunnel).
 
 ```mermaid
-  sequenceDiagram
-    JavaScript ->> Golang: HTTP request object
-    Golang ->> DERP: Websocket
-    DERP -->> Golang: Websocket
-    Golang -->> JavaScript: HTTP response object
+sequenceDiagram
+    JS ->> Go: HTTP request
+    Go ->> DERP: WebSocket
+    DERP ->> Self-Service: WebSocket
+    Self-Service ->> Headscale : GRPC
+
+    Headscale -->> Self-Service : GRPC
+    Self-Service -->> DERP: WebSocket
+    DERP -->> Go: WebSocket
+    Go -->> JS: HTTP response
 ```
+
+## Feedback & Contributions
+
+We value thoughtful feedback — whether it's about design decisions, usability, or ideas for improvement. You're welcome to open an issue to start a conversation. While we can’t promise to implement everything, we carefully consider all suggestions.
+
+Contributions are welcome! However, to avoid wasted effort, please open an issue first to discuss any significant changes before submitting a pull request. Bug fixes, improvements, and well-scoped features are especially appreciated — just make sure they align with the project's direction.
+
+## License
+
+[MIT License](https://github.com/rickli-cloud/headscale-console/blob/main/LICENSE) - Copyright (c) 2025 rickli-cloud
+
+Made with ❤️ for secure and hassle-free remote access.
