@@ -62,7 +62,7 @@ services:
       - proxy
     labels:
       traefik.enable: true
-      traefik.http.routers.headscale.rule: Host(`${HEADSCALE_SERVER_HOSTNAME?required}`)
+      traefik.http.routers.headscale.rule: Host(`${HEADSCALE_SERVER_HOSTNAME:?required}`)
       traefik.http.routers.headscale.entrypoints: https
       traefik.http.routers.headscale.tls.certresolver: letsencrypt
       traefik.http.services.headscale.loadbalancer.server.port: 8080
@@ -82,7 +82,7 @@ services:
       - proxy
     labels:
       traefik.enable: true
-      traefik.http.routers.headscale-console.rule: Host(`${HEADSCALE_SERVER_HOSTNAME?required}`) && PathPrefix(`/admin`)
+      traefik.http.routers.headscale-console.rule: Host(`${HEADSCALE_SERVER_HOSTNAME:?required}`) && PathPrefix(`/admin`)
       traefik.http.routers.headscale-console.entrypoints: https
       traefik.http.routers.headscale-console.tls.certresolver: letsencrypt
       traefik.http.services.headscale-console.loadbalancer.server.port: 3000
@@ -92,7 +92,7 @@ services:
     container_name: headscale-selfservice
     pull_policy: always
     restart: always
-    command: selfservice --control-url https://${HEADSCALE_SERVER_HOSTNAME?required}
+    command: selfservice --control-url https://${HEADSCALE_SERVER_HOSTNAME:?required}
     volumes:
       - headscale-socket:/var/run/headscale:ro
       - selfservice-data:/data:rw

@@ -42,6 +42,7 @@
     "monaco-editor": "^0.52.2",
     "qrcode-svg": "^1.1.0",
     "rxjs": "^7.8.2",
+    "svelte-sonner": "^1.0.3",
     "ua-parser-js": "^2.0.3"
   }
 }

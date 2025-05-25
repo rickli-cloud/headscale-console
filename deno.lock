@@ -24,6 +24,7 @@
     "npm:rxjs@^7.8.2": "7.8.2",
     "npm:shadcn-svelte@^1.0.0-next.4": "1.0.0-next.9",
     "npm:svelte-check@^4.1.4": "4.1.5_svelte@5.22.6__acorn@8.14.1_typescript@5.7.3",
+    "npm:svelte-sonner@^1.0.3": "1.0.3_svelte@5.22.6__acorn@8.14.1",
     "npm:svelte@^5.20.2": "5.22.6_acorn@8.14.1",
     "npm:tailwind-merge@^3.0.2": "3.0.2",
     "npm:tailwind-variants@~0.3.1": "0.3.1_tailwindcss@3.4.17__postcss@8.5.3",
@@ -417,7 +418,7 @@
         "@floating-ui/dom",
         "@internationalized/date",
         "esm-env",
-        "runed",
+        "runed@0.23.4_svelte@5.22.6__acorn@8.14.1",
         "svelte",
         "svelte-toolbelt",
         "tabbable"
@@ -1092,6 +1093,13 @@
         "svelte"
       ]
     },
+    "runed@0.26.0_svelte@5.22.6__acorn@8.14.1": {
+      "integrity": "sha512-qWFv0cvLVRd8pdl/AslqzvtQyEn5KaIugEernwg9G98uJVSZcs/ygvPBvF80LA46V8pwRvSKnaVLDI3+i2wubw==",
+      "dependencies": [
+        "esm-env",
+        "svelte"
+      ]
+    },
     "rxjs@7.8.2": {
       "integrity": "sha512-dhKf903U/PQZY6boNNtAGdWbG85WAbjT/1xYoZIC7FAY0yWapOBQVsVrDl58W86//e1VpMNBtRV4MaXfdMySFA==",
       "dependencies": [
@@ -1204,11 +1212,18 @@
         "typescript"
       ]
     },
+    "svelte-sonner@1.0.3_svelte@5.22.6__acorn@8.14.1": {
+      "integrity": "sha512-vm/+GxgOOv2mnQYH1iUtBN/pLvFmlHthpK9YqsqIUJZbq4+HT6zopHk4S/1vHKvLTyjgo9vzqA0Z+Z2sPQ/nTQ==",
+      "dependencies": [
+        "runed@0.26.0_svelte@5.22.6__acorn@8.14.1",
+        "svelte"
+      ]
+    },
     "svelte-toolbelt@0.7.1_svelte@5.22.6__acorn@8.14.1": {
       "integrity": "sha512-HcBOcR17Vx9bjaOceUvxkY3nGmbBmCBBbuWLLEWO6jtmWH8f/QoWmbyUfQZrpDINH39en1b8mptfPQT9VKQ1xQ==",
       "dependencies": [
         "clsx",
-        "runed",
+        "runed@0.23.4_svelte@5.22.6__acorn@8.14.1",
         "style-to-object",
         "svelte"
       ]
@@ -1419,6 +1434,7 @@
         "npm:rxjs@^7.8.2",
         "npm:shadcn-svelte@^1.0.0-next.4",
         "npm:svelte-check@^4.1.4",
+        "npm:svelte-sonner@^1.0.3",
         "npm:svelte@^5.20.2",
         "npm:tailwind-merge@^3.0.2",
         "npm:tailwind-variants@~0.3.1",

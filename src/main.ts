@@ -1,11 +1,17 @@
 import { ModeWatcher } from "mode-watcher";
 import { mount, unmount } from "svelte";
 
+import { Toaster } from "$lib/components/ui/sonner";
+
+import CriticalError from "$lib/components/error/CriticalError.svelte";
+
 import { createClient, IpnEventHandler } from "$lib/api/tsconnect";
-import { loadIpnProfiles, netMap } from "$lib/store/ipn";
-import { loadAppConfig } from "./lib/store/config";
-import type { Ipn } from "$lib/types/ipn.d";
 import { AppRouter, type AppRoute } from "$lib/utils/router";
+import { loadIpnProfiles, netMap } from "$lib/store/ipn";
+import { loadUserSettings } from "$lib/store/settings";
+import { loadAppConfig } from "./lib/store/config";
+import { errorToast } from "$lib/utils/error";
+import type { Ipn } from "$lib/types/ipn.d";
 
 import "./app.css";
 
@@ -14,7 +20,6 @@ import LoginScreen from "./LoginScreen.svelte";
 import Connect from "./Connect.svelte";
 import NotFound from "./404.svelte";
 import App from "./App.svelte";
-import { loadUserSettings } from "$lib/store/settings";
 
 declare global {
   interface Window {
@@ -39,6 +44,7 @@ type Mount = object;
   }
 
   mount(ModeWatcher, { target: document.body });
+  mount(Toaster, { target: document.body });
 
   let loadingScreen: Mount | undefined = mount(LoadingScreen, {
     target: appEl,
@@ -62,10 +68,8 @@ type Mount = object;
   window.appRouter = new AppRouter({
     target: appEl,
     fallbackComponent: NotFound,
+    routes,
   });
-  for (const route of routes) {
-    window.appRouter.routes.push(route);
-  }
 
   let tsProfiles = loadIpnProfiles();
 
@@ -74,7 +78,17 @@ type Mount = object;
     : undefined;
 
   window.ipn = await createClient({
-    panicHandler: console.error,
+    panicHandler: (err) => {
+      stopped = true;
+      console.error(err);
+      unmountEverything();
+      mount(CriticalError, {
+        target: appEl,
+        props: {
+          error: err,
+        },
+      });
+    },
     routeAll: true,
     authKey,
     controlURL: cfg.controlUrl,
@@ -93,14 +107,7 @@ type Mount = object;
         );
       }
 
-      if (loadingScreen) {
-        unmount(loadingScreen);
-        loadingScreen = undefined;
-      }
-      if (loginScreen) {
-        unmount(loginScreen);
-        loginScreen = undefined;
-      }
+      unmountEverything();
 
       loginScreen = mount(LoginScreen, {
         target: appEl,
@@ -139,24 +146,13 @@ type Mount = object;
             throw new Error("Failed to load profile");
           }
 
-          if (loadingScreen) {
-            unmount(loadingScreen);
-            loadingScreen = undefined;
-          }
-          if (loginScreen) {
-            unmount(loginScreen);
-            loginScreen = undefined;
-          }
-
+          unmountEverything();
           window.appRouter.resolve();
-
-          // const component = getRouteComponent(routes, location.hash);
-          // app = mount(component, { target: appEl });
 
           break;
         case "Stopped":
           stopped = true;
-          window.appRouter.unmount();
+          unmountEverything();
           break;
       }
     }
@@ -175,5 +171,30 @@ type Mount = object;
     }
   );
 
+  window.ipnEventHandler.addEventListener(
+    window.ipnEventHandler.Events.panicRecover,
+    (ev) => {
+      if (!(ev instanceof window.ipnEventHandler.NotifyPanicRecoverEvent)) {
+        throw new Error(
+          `Event payload for "${window.ipnEventHandler.Events.panicRecover}" is not instance of NotifyPanicRecoverEvent`,
+          { cause: ev }
+        );
+      }
+      errorToast("Panic Recover: " + ev.err);
+    }
+  );
+
   window.ipn.run(window.ipnEventHandler);
+
+  function unmountEverything() {
+    if (loadingScreen) {
+      unmount(loadingScreen);
+      loadingScreen = undefined;
+    }
+    if (loginScreen) {
+      unmount(loginScreen);
+      loginScreen = undefined;
+    }
+    window.appRouter.unmount();
+  }
 })();

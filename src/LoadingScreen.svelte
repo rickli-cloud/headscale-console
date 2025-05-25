@@ -2,6 +2,8 @@
   import Spinner from "$lib/components/utils/Spinner.svelte";
 </script>
 
-<main class="h-screen w-screen grid place-items-center">
+<div
+  class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+>
   <Spinner class="h-16 w-16" />
-</main>
+</div>

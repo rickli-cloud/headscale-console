@@ -12,9 +12,11 @@ export class AppRouter {
   public constructor(data: {
     target: HTMLElement;
     fallbackComponent: Component;
+    routes?: AppRoute[];
   }) {
-    this.target = data.target;
+    if (data.routes) this.routes = data.routes;
     this.fallbackComponent = data.fallbackComponent;
+    this.target = data.target;
 
     window.addEventListener("hashchange", () => this.resolve());
     window.addEventListener("popstate", () => this.resolve());

@@ -84,7 +84,9 @@
 
       userInteractionService?.shutdown();
       rawChannel?.close();
-      if (componentMount) unmount(componentMount);
+      if (typeof componentMount !== "undefined" && componentMount !== null) {
+        unmount(componentMount);
+      }
     };
   });
 
@@ -144,7 +146,6 @@
   const resizeHandler = debounce(() => {
     const width = window.innerWidth >= 0 ? window.innerWidth : 0;
     const height = window.innerHeight >= 0 ? window.innerHeight : 0;
-    console.debug("resize", { width, height });
     userInteractionService?.resize(width, height);
   });
 </script>
