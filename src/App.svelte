@@ -4,6 +4,11 @@
   import NodeMap from "$lib/components/data/node/NodeMap.svelte";
 
   import { netMap } from "$lib/store/ipn";
+  import { onMount } from "svelte";
+
+  onMount(() => {
+    document.body.classList.remove("overflow-hidden");
+  });
 </script>
 
 <main class="max-w-screen-lg mx-auto space-y-16 px-8 py-12 h-full">

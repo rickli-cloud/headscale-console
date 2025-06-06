@@ -2,9 +2,14 @@ import { writable } from "svelte/store";
 import type { UserSettings } from "./settings";
 
 export interface AppConfig {
+  logLevel: "OFF" | "ERROR" | "WARN" | "INFO" | "DEBUG" | "TRACE";
+  /** Headscale url */
   controlUrl: string;
+  /** Used to identify the self-service endpoint */
   selfserviceHostname: string;
+  /** Only apply when using a authkey */
   tags: string[];
+  /** User settings defaults. See `./settings` */
   defaults: UserSettings;
 }
 
@@ -33,6 +38,7 @@ export async function loadAppConfig(): Promise<AppConfig> {
 
 function applyDefaults(opt: Partial<AppConfig>): AppConfig {
   return {
+    logLevel: "INFO",
     controlUrl:
       import.meta.env.VITE_DEV_HEADSCALE_HOST ||
       window.ipnProfile?.ControlURL ||

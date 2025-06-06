@@ -84,9 +84,7 @@ type Mount = object;
       unmountEverything();
       mount(CriticalError, {
         target: appEl,
-        props: {
-          error: err,
-        },
+        props: { error: err },
       });
     },
     routeAll: true,

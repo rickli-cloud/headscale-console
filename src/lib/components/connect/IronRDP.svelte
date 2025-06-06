@@ -21,6 +21,8 @@
   import { IpnRawTcpChannel } from "$lib/api/tsconnect";
   import { debounce } from "$lib/utils/misc";
   import TriangleAlert from "lucide-svelte/icons/triangle-alert";
+  import { appConfig } from "$lib/store/config";
+  import { get } from "svelte/store";
 
   interface Props {
     hostname: string;
@@ -99,7 +101,7 @@
         // TODO
         // @ts-expect-error
         module: pkg,
-        debugwasm: import.meta.env.PROD ? "INFO" : "DEBUG",
+        debugwasm: get(appConfig).logLevel,
         verbose: "true",
         scale: "real",
         flexcenter: "true",

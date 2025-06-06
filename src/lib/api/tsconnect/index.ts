@@ -175,9 +175,6 @@ export class IpnRawTcpChannel extends EventTarget implements RTCDataChannel {
   }
 }
 
-// let test = await IpnRawTcpChannel.connect({ hostname: "", port: 0 });
-// test.addEventListener;
-
 /* function stringifyBuffer(data: Uint8Array) {
   return (
     "\n[ " +
