@@ -5,10 +5,6 @@
 
 **A WebAssembly-powered client for connecting to your Headscale nodes via SSH, VNC, or RDP — directly from the comfort of your browser.** Includes an optional self-service integration for seamless device onboarding and management.
 
-> [!NOTE]  
-> This project is under active development and has not yet reached a stable release.
-> Expect occasional breaking changes until v1.0.0.
-
 ## Features
 
 - **SSH Console** — Secure terminal access to your nodes

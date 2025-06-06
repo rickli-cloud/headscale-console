@@ -1,9 +1,14 @@
 <script lang="ts">
   import { mount, onMount, unmount } from "svelte";
 
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+
+  import * as Alert from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
   import { Label } from "$lib/components/ui/label";
   import { Input } from "$lib/components/ui/input";
+
+  import { IronErrorKind } from "$lib/components/ironrdp/interfaces/session-event";
 
   import {
     pkg,
@@ -15,6 +20,7 @@
 
   import { IpnRawTcpChannel } from "$lib/api/tsconnect";
   import { debounce } from "$lib/utils/misc";
+  import TriangleAlert from "lucide-svelte/icons/triangle-alert";
 
   interface Props {
     hostname: string;
@@ -30,12 +36,15 @@
   let password = $state<string>("");
   let serverDomain = $state<string>("");
 
+  let userInteractionService = $state<UserInteraction>();
+  let rawChannel = $state<IpnRawTcpChannel>();
+  let session = $state<NewSessionInfo>();
+  let componentMount = $state<object>();
+
   let isLoading = $state<boolean>(false);
   let isLoggedIn = $state<boolean>(false);
-  let userInteractionService = $state<UserInteraction | undefined>();
-  let rawChannel = $state<IpnRawTcpChannel | undefined>();
-  let session = $state<NewSessionInfo | undefined>();
-  let componentMount = $state();
+  let errorMessage = $state<unknown>();
+  let errorType = $state<"Terminated" | "Error" | "Handler Error">();
 
   let el: HTMLDivElement;
 
@@ -45,19 +54,43 @@
 
       userInteractionService = detail?.irgUserInteraction;
 
-      userInteractionService.onSessionEvent((ev) =>
+      userInteractionService.onSessionEvent((ev) => {
+        const data =
+          typeof ev.data === "string"
+            ? { backtrace: ev.data }
+            : { backtrace: ev.data.backtrace(), kind: ev.data.kind() };
+
         console.warn(
-          `Session event: ${SessionEventType[ev.type]}\n${
-            typeof ev.data === "string"
-              ? ev.data
-              : JSON.stringify(
-                  { backtrace: ev.data.backtrace(), kind: ev.data.kind() },
-                  null,
-                  2
-                )
-          }`
-        )
-      );
+          `Session event: ${SessionEventType[ev.type]}\nkind: ${data.kind}\n${data.backtrace}`
+        );
+
+        switch (ev.type) {
+          case SessionEventType.ERROR:
+            errorType = "Error";
+            errorMessage = data.backtrace;
+            userInteractionService?.setVisibility(false);
+            if (
+              typeof data.kind === "number" &&
+              data.kind === IronErrorKind.LogonFailure
+            ) {
+              errorMessage = "Invalid username or password";
+            }
+            break;
+          case SessionEventType.STARTED:
+            isLoggedIn = true;
+            userInteractionService?.setVisibility(true);
+            break;
+          case SessionEventType.TERMINATED:
+            errorType = "Terminated";
+            errorMessage = data.backtrace;
+            userInteractionService?.setVisibility(false);
+            isLoggedIn = false;
+            break;
+          default:
+            console.warn(`Unhandled session event: "${ev.type}"`, ev);
+            break;
+        }
+      });
     });
 
     componentMount = mount(IronRdp, {
@@ -97,16 +130,17 @@
   };
 
   async function onLogin() {
-    if (!userInteractionService) return;
+    errorMessage = undefined;
+    errorType = undefined;
+
+    if (!userInteractionService) {
+      throw new Error("UserInteractionService not yet ready!");
+    }
 
     rawChannel = await IpnRawTcpChannel.connect({
       hostname,
       port,
-    }).catch((e) => {
-      throw `Failed to connect: ` + e;
     });
-
-    console.debug({ rawChannel });
 
     session = await userInteractionService.connect({
       username,
@@ -118,9 +152,7 @@
       extensions: [],
     });
 
-    userInteractionService.setVisibility(true);
-
-    isLoggedIn = true;
+    password = "";
   }
 
   interface IronRdpReadyEvent extends Event {
@@ -153,18 +185,55 @@
 {#if !isLoggedIn}
   <form
     class="px-6 py-4 [&>div]:space-y-2 space-y-6 w-full max-w-96 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border bg-background"
-    onsubmit={(ev) => {
+    onsubmit={async (ev) => {
       ev.preventDefault();
+      if (isLoading) return;
       isLoading = true;
-      onLogin().then(() => (isLoading = false));
+      try {
+        await onLogin();
+      } catch (err) {
+        console.error(err);
+        errorType = "Handler Error";
+        errorMessage =
+          err instanceof Error
+            ? err.toString()
+            : typeof err === "string"
+              ? err
+              : JSON.stringify(err, null, 2);
+      } finally {
+        isLoading = false;
+      }
     }}
   >
     <div>
+      <Button
+        onclick={() => {
+          let url = new URL(window.location.href);
+          url.search = "";
+          url.hash = "#/";
+          window.appRouter.goto(url);
+        }}
+        variant="link"
+        class="text-muted-foreground gap-1 text-xs px-0"
+      >
+        <ArrowLeft class="!h-3 !w-3" />
+        Back
+      </Button>
       <h3 class="scroll-m-20 text-2xl font-semibold tracking-tight">
         RDP Authentication
       </h3>
       <p class="text-muted-foreground">Connect to a node over native RDP</p>
     </div>
+
+    {#if typeof errorMessage !== "undefined"}
+      <div>
+        <Alert.Root variant="destructive">
+          <TriangleAlert class="size-4" />
+          <Alert.Title>Session {errorType || "Error"}</Alert.Title>
+          <Alert.Description>{errorMessage}</Alert.Description>
+        </Alert.Root>
+      </div>
+    {/if}
 
     <div
       class="grid items-center gap-x-2"
@@ -192,7 +261,9 @@
       <Input bind:value={serverDomain} />
     </div>
 
-    <Button type="submit" class="w-full !mt-12">Connect</Button>
+    <Button type="submit" class="w-full !mt-12" disabled={isLoading}>
+      Connect
+    </Button>
   </form>
 {/if}
 

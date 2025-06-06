@@ -2,6 +2,8 @@
   import NoVncClient from "@novnc/novnc/lib/rfb";
   import { onMount } from "svelte";
 
+  import ArrowLeft from "lucide-svelte/icons/arrow-left";
+
   import { Button } from "$lib/components/ui/button";
   import { Label } from "$lib/components/ui/label";
   import { Input } from "$lib/components/ui/input";
@@ -69,6 +71,19 @@
     }}
   >
     <div>
+      <Button
+        onclick={() => {
+          let url = new URL(window.location.href);
+          url.search = "";
+          url.hash = "#/";
+          window.appRouter.goto(url);
+        }}
+        variant="link"
+        class="text-muted-foreground gap-1 text-xs px-0"
+      >
+        <ArrowLeft class="!h-3 !w-3" />
+        Back
+      </Button>
       <h3 class="scroll-m-20 text-2xl font-semibold tracking-tight">
         VNC Authentication
       </h3>

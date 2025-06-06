@@ -3,7 +3,7 @@ import { mount, unmount } from "svelte";
 
 import { Toaster } from "$lib/components/ui/sonner";
 
-import CriticalError from "$lib/components/error/CriticalError.svelte";
+import { CriticalError } from "$lib/components/error";
 
 import { createClient, IpnEventHandler } from "$lib/api/tsconnect";
 import { AppRouter, type AppRoute } from "$lib/utils/router";
