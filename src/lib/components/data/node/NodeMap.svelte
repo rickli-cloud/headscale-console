@@ -31,7 +31,7 @@
     for (const peer of peers) {
       if (
         peer.user?.replace(/^userid:/, "") ===
-        window.ipnProfiles.currentProfile?.Config?.UserProfile?.ID?.toString()
+        window.ipnProfiles?.currentProfile?.Config?.UserProfile?.ID?.toString()
       ) {
         if (showOwned) result.push(peer);
       } else if (showExternal) {
@@ -99,7 +99,7 @@
             <p class="text-muted-foreground">
               <HoverCard.Root>
                 <HoverCard.Trigger class="hover:underline">
-                  {window.ipnProfiles.currentProfile?.Config.UserProfile
+                  {window.ipnProfiles?.currentProfile?.Config.UserProfile
                     .DisplayName}
                 </HoverCard.Trigger>
 
@@ -109,22 +109,22 @@
                       <!-- <Avatar.Image src={user.avatar} alt={user.name} /> -->
                       <Avatar.Fallback class="rounded-lg">
                         {shortName(
-                          window.ipnProfiles.currentProfile?.Config.UserProfile
+                          window.ipnProfiles?.currentProfile?.Config.UserProfile
                             .DisplayName ||
-                            window.ipnProfiles.currentProfile?.Config
+                            window.ipnProfiles?.currentProfile?.Config
                               .UserProfile.LoginName ||
-                            window.ipnProfiles.currentProfile?.Config
+                            window.ipnProfiles?.currentProfile?.Config
                               .UserProfile.ID
                         )}
                       </Avatar.Fallback>
                     </Avatar.Root>
                     <div class="grid flex-1 text-left text-sm leading-tight">
                       <span class="truncate font-semibold"
-                        >{window.ipnProfiles.currentProfile?.Config.UserProfile
+                        >{window.ipnProfiles?.currentProfile?.Config.UserProfile
                           .DisplayName}</span
                       >
                       <span class="truncate text-xs"
-                        >{window.ipnProfiles.currentProfile?.Config.UserProfile
+                        >{window.ipnProfiles?.currentProfile?.Config.UserProfile
                           .LoginName}</span
                       >
                     </div>

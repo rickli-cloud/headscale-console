@@ -51,11 +51,13 @@
           <!-- <Avatar.Image src={ user.avatar} alt={user.name} /> -->
           <Avatar.Fallback class="rounded-lg">
             {shortName(
-              window.ipnProfiles.currentProfile?.Config.UserProfile
+              window.ipnProfiles?.currentProfile?.Config.UserProfile
                 .DisplayName ||
-                window.ipnProfiles.currentProfile?.Config.UserProfile
+                window.ipnProfiles?.currentProfile?.Config.UserProfile
                   .LoginName ||
-                String(window.ipnProfiles.currentProfile?.Config.UserProfile.ID)
+                String(
+                  window.ipnProfiles?.currentProfile?.Config.UserProfile.ID
+                )
             )}
           </Avatar.Fallback>
         </Avatar.Root>
@@ -75,20 +77,20 @@
           <!-- <Avatar.Image src={user.avatar} alt={user.name} /> -->
           <Avatar.Fallback class="rounded-lg">
             {shortName(
-              window.ipnProfiles.currentProfile?.Config.UserProfile
+              window.ipnProfiles?.currentProfile?.Config.UserProfile
                 .DisplayName ||
-                window.ipnProfiles.currentProfile?.Config.UserProfile
+                window.ipnProfiles?.currentProfile?.Config.UserProfile
                   .LoginName ||
-                window.ipnProfiles.currentProfile?.Config.UserProfile.ID
+                window.ipnProfiles?.currentProfile?.Config.UserProfile.ID
             )}
           </Avatar.Fallback>
         </Avatar.Root>
         <div class="grid flex-1 text-left text-sm leading-tight">
           <span class="truncate font-semibold">
-            {window.ipnProfiles.currentProfile?.Config.UserProfile.DisplayName}
+            {window.ipnProfiles?.currentProfile?.Config.UserProfile.DisplayName}
           </span>
           <span class="truncate text-xs">
-            {window.ipnProfiles.currentProfile?.Config.UserProfile.LoginName}
+            {window.ipnProfiles?.currentProfile?.Config.UserProfile.LoginName}
           </span>
         </div>
       </div>

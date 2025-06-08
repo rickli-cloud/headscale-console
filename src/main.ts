@@ -24,7 +24,7 @@ import App from "./App.svelte";
 declare global {
   interface Window {
     ipn: IPN;
-    ipnProfiles: {
+    ipnProfiles?: {
       current?: string;
       profiles: { [profile: string]: Ipn.Profile };
       get currentProfile(): Ipn.Profile | undefined;
@@ -55,20 +55,16 @@ const routes: AppRoute[] = [
 
   let stopped = false;
 
-  let params = new URLSearchParams(window.location.search);
-
-  let authKey = params.get("k") || undefined;
-  let paramsTags = params.get("t") || undefined;
-
-  let cfg = await loadAppConfig();
-
-  loadUserSettings(cfg.defaults);
-
   window.appRouter = new AppRouter({
     target: appEl,
     fallbackComponent: NotFound,
     routes,
   });
+
+  let params = new URLSearchParams(window.location.search);
+
+  let authKey = params.get("k") || undefined;
+  let paramsTags = params.get("t") || undefined;
 
   window.ipnProfiles = {
     ...loadIpnProfiles(),
@@ -77,6 +73,10 @@ const routes: AppRoute[] = [
       return this.profiles[this.current];
     },
   };
+
+  let cfg = await loadAppConfig();
+
+  loadUserSettings(cfg.defaults);
 
   window.ipn = await createClient({
     panicHandler: async (err) => {
