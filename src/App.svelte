@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import NetworkMembers from "$lib/components/data/user/NetworkMembers.svelte";
   import UserMenu from "$lib/components/data/user/UserMenu.svelte";
   import NodeMap from "$lib/components/data/node/NodeMap.svelte";
 
   import { netMap } from "$lib/store/ipn";
-  import { onMount } from "svelte";
 
   onMount(() => {
     document.body.classList.remove("overflow-hidden");

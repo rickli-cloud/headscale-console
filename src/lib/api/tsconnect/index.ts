@@ -64,48 +64,66 @@ export class IpnEventHandler extends EventTarget implements IPNCallbacks {
   public notifyPanicRecover(err: string) {
     this.dispatchEvent(new NotifyPanicRecoverEvent(err));
   }
+
+  public addEventListener<
+    EventType extends keyof IpnEventMap,
+    EventPayload extends Event = IpnEventMap[EventType]
+  >(
+    type: EventType,
+    callback: (ev: EventPayload) => void,
+    options?: AddEventListenerOptions | boolean
+  ): void {
+    return super.addEventListener(type, callback as EventListener, options);
+  }
 }
 
 enum IpnEvents {
-  browseToURL = "notifyBrowseToURL",
-  netMap = "notifyNetMap",
-  state = "notifyState",
-  panicRecover = "notifyPanicRecover",
+  browseToURL = "BrowseToURL",
+  netMap = "NetMap",
+  state = "State",
+  panicRecover = "PanicRecover",
+}
+
+interface IpnEventMap {
+  BrowseToURL: NotifyBrowseToURLEvent;
+  NetMap: NotifyNetMapEvent;
+  State: NotifyStateEvent;
+  PanicRecover: NotifyPanicRecoverEvent;
 }
 
 class NotifyBrowseToURLEvent extends Event {
-  public readonly url: string;
+  public readonly detail: { url: string };
 
   constructor(url: string) {
     super(IpnEvents.browseToURL);
-    this.url = url;
+    this.detail = { url };
   }
 }
 
 class NotifyNetMapEvent extends Event {
-  public readonly netMapStr: string;
+  public readonly detail: { netMapStr: string };
 
   constructor(netMapStr: string) {
     super(IpnEvents.netMap);
-    this.netMapStr = netMapStr;
+    this.detail = { netMapStr };
   }
 }
 
 class NotifyStateEvent extends Event {
-  public readonly state: IPNState;
+  public readonly detail: { state: IPNState };
 
   constructor(state: IPNState) {
     super(IpnEvents.state);
-    this.state = state;
+    this.detail = { state };
   }
 }
 
 class NotifyPanicRecoverEvent extends Event {
-  public readonly err: string;
+  public readonly detail: { err: string };
 
   constructor(err: string) {
     super(IpnEvents.panicRecover);
-    this.err = err;
+    this.detail = { err };
   }
 }
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { mount, onMount, unmount } from "svelte";
 
+  import TriangleAlert from "lucide-svelte/icons/triangle-alert";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
 
   import * as Alert from "$lib/components/ui/alert";
@@ -20,7 +21,6 @@
 
   import { IpnRawTcpChannel } from "$lib/api/tsconnect";
   import { debounce } from "$lib/utils/misc";
-  import TriangleAlert from "lucide-svelte/icons/triangle-alert";
   import { appConfig } from "$lib/store/config";
   import { get } from "svelte/store";
 
@@ -132,29 +132,45 @@
   };
 
   async function onLogin() {
-    errorMessage = undefined;
-    errorType = undefined;
+    if (isLoading) return;
+    try {
+      isLoading = true;
+      errorMessage = undefined;
+      errorType = undefined;
 
-    if (!userInteractionService) {
-      throw new Error("UserInteractionService not yet ready!");
+      if (rawChannel) rawChannel.close();
+
+      if (!userInteractionService) {
+        throw new Error("UserInteractionService not yet ready!");
+      }
+
+      rawChannel = await IpnRawTcpChannel.connect({
+        hostname,
+        port,
+      });
+
+      session = await userInteractionService.connect({
+        username,
+        password,
+        serverDomain,
+        destination: rawChannel.remoteAddr,
+        dataChannel: rawChannel,
+        desktopSize: new DesktopSize(el.scrollWidth, el.scrollHeight),
+        extensions: [],
+      });
+    } catch (err) {
+      console.error(err);
+      errorType = "Handler Error";
+      errorMessage =
+        err instanceof Error
+          ? err.toString()
+          : typeof err === "string"
+            ? err
+            : JSON.stringify(err, null, 2);
+    } finally {
+      isLoading = false;
+      password = "";
     }
-
-    rawChannel = await IpnRawTcpChannel.connect({
-      hostname,
-      port,
-    });
-
-    session = await userInteractionService.connect({
-      username,
-      password,
-      serverDomain,
-      destination: rawChannel.remoteAddr,
-      dataChannel: rawChannel,
-      desktopSize: new DesktopSize(el.scrollWidth, el.scrollHeight),
-      extensions: [],
-    });
-
-    password = "";
   }
 
   interface IronRdpReadyEvent extends Event {
@@ -189,22 +205,7 @@
     class="px-6 py-4 [&>div]:space-y-2 space-y-6 w-full max-w-96 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border bg-background"
     onsubmit={async (ev) => {
       ev.preventDefault();
-      if (isLoading) return;
-      isLoading = true;
-      try {
-        await onLogin();
-      } catch (err) {
-        console.error(err);
-        errorType = "Handler Error";
-        errorMessage =
-          err instanceof Error
-            ? err.toString()
-            : typeof err === "string"
-              ? err
-              : JSON.stringify(err, null, 2);
-      } finally {
-        isLoading = false;
-      }
+      await onLogin();
     }}
   >
     <div>

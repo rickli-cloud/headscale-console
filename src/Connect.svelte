@@ -1,10 +1,11 @@
 <script lang="ts">
+  import { onMount } from "svelte";
+
   import IronRdp from "$lib/components/connect/IronRDP.svelte";
   import NoVnc from "$lib/components/connect/NoVNC.svelte";
   import Xterm from "$lib/components/connect/Xterm.svelte";
 
   import { decodeConnectParams, type ConnectParams } from "$lib/utils/connect";
-  import { onMount } from "svelte";
 
   let connectParams = $state<ConnectParams>();
   let err = $state<unknown>();

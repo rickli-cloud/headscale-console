@@ -41,7 +41,8 @@ function applyDefaults(opt: Partial<AppConfig>): AppConfig {
     logLevel: "INFO",
     controlUrl:
       import.meta.env.VITE_DEV_HEADSCALE_HOST ||
-      window.ipnProfile?.ControlURL ||
+      (window.ipnProfiles.current &&
+        window.ipnProfiles.profiles[window.ipnProfiles.current]?.ControlURL) ||
       new URL("/", window.location.toString()).toString(),
     selfserviceHostname: "self-service",
     tags: [],

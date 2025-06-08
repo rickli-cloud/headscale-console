@@ -33,7 +33,8 @@
 
   let user = $derived($netMap?.users[peer.user?.replace(/^userid:/, "")]);
   let isOwned = $derived(
-    Number(user?.ID) === window.ipnProfile?.Config?.UserProfile?.ID
+    Number(user?.ID) ===
+      window.ipnProfiles.currentProfile?.Config?.UserProfile?.ID
   );
 
   let confirmExpire = $state<ConfirmAction>();

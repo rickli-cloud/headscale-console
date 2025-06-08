@@ -24,7 +24,11 @@ import App from "./App.svelte";
 declare global {
   interface Window {
     ipn: IPN;
-    ipnProfile: Ipn.Profile | undefined;
+    ipnProfiles: {
+      current?: string;
+      profiles: { [profile: string]: Ipn.Profile };
+      get currentProfile(): Ipn.Profile | undefined;
+    };
     ipnEventHandler: IpnEventHandler;
     appRouter: AppRouter;
   }
@@ -35,8 +39,6 @@ const routes: AppRoute[] = [
   { path: /^\/?connect\/?$/, component: Connect },
 ];
 
-type Mount = object;
-
 (async () => {
   const appEl = document.getElementById("app");
   if (!appEl) {
@@ -46,20 +48,17 @@ type Mount = object;
   mount(ModeWatcher, { target: document.body });
   mount(Toaster, { target: document.body });
 
-  let loadingScreen: Mount | undefined = mount(LoadingScreen, {
+  let loadingScreen: object | undefined = mount(LoadingScreen, {
     target: appEl,
   });
-  let loginScreen: Mount | undefined;
+  let loginScreen: object | undefined;
 
   let stopped = false;
 
   let params = new URLSearchParams(window.location.search);
 
   let authKey = params.get("k") || undefined;
-  if (authKey) authKey = decodeURIComponent(authKey);
-
   let paramsTags = params.get("t") || undefined;
-  if (paramsTags) paramsTags = decodeURIComponent(paramsTags);
 
   let cfg = await loadAppConfig();
 
@@ -71,17 +70,19 @@ type Mount = object;
     routes,
   });
 
-  let tsProfiles = loadIpnProfiles();
-
-  window.ipnProfile = tsProfiles.current
-    ? tsProfiles.profiles[tsProfiles.current]
-    : undefined;
+  window.ipnProfiles = {
+    ...loadIpnProfiles(),
+    get currentProfile() {
+      if (!this.current) return undefined;
+      return this.profiles[this.current];
+    },
+  };
 
   window.ipn = await createClient({
-    panicHandler: (err) => {
+    panicHandler: async (err) => {
       stopped = true;
       console.error(err);
-      unmountEverything();
+      await unmountEverything();
       mount(CriticalError, {
         target: appEl,
         props: { error: err },
@@ -97,19 +98,11 @@ type Mount = object;
 
   window.ipnEventHandler.addEventListener(
     window.ipnEventHandler.Events.browseToURL,
-    (ev) => {
-      if (!(ev instanceof window.ipnEventHandler.NotifyBrowseToURLEvent)) {
-        throw new Error(
-          `Event payload for "${window.ipnEventHandler.Events.browseToURL}" is not instance of NotifyBrowseToURLEvent`,
-          { cause: ev }
-        );
-      }
-
-      unmountEverything();
-
+    async (ev) => {
+      await unmountEverything();
       loginScreen = mount(LoginScreen, {
         target: appEl,
-        props: { url: ev.url },
+        props: { url: ev.detail.url },
       });
     }
   );
@@ -117,40 +110,35 @@ type Mount = object;
   window.ipnEventHandler.addEventListener(
     window.ipnEventHandler.Events.state,
     async (ev) => {
-      if (!(ev instanceof window.ipnEventHandler.NotifyStateEvent)) {
-        throw new Error(
-          `Event payload for "${window.ipnEventHandler.Events.state}" is not instance of NotifyStateEvent`,
-          { cause: ev }
-        );
-      }
-
-      console.info("state:", ev.state);
-
-      switch (ev.state) {
+      console.info("state:", ev.detail.state);
+      switch (ev.detail.state) {
         case "NeedsLogin":
           if (stopped) break;
           window.ipn.login();
           break;
         case "Running":
-          tsProfiles = loadIpnProfiles();
+          window.ipnProfiles = {
+            ...loadIpnProfiles(),
+            get currentProfile() {
+              if (!this.current) return undefined;
+              return this.profiles[this.current];
+            },
+          };
 
-          if (!tsProfiles.current) {
+          if (
+            !window.ipnProfiles.current ||
+            !window.ipnProfiles.profiles[window.ipnProfiles.current]
+          ) {
             throw new Error("Failed to load profile");
           }
 
-          window.ipnProfile = tsProfiles.profiles[tsProfiles.current];
-
-          if (!window.ipnProfile) {
-            throw new Error("Failed to load profile");
-          }
-
-          unmountEverything();
-          window.appRouter.resolve();
+          await unmountEverything();
+          await window.appRouter.resolve();
 
           break;
         case "Stopped":
           stopped = true;
-          unmountEverything();
+          await unmountEverything();
           break;
       }
     }
@@ -159,38 +147,26 @@ type Mount = object;
   window.ipnEventHandler.addEventListener(
     window.ipnEventHandler.Events.netMap,
     (ev) => {
-      if (!(ev instanceof window.ipnEventHandler.NotifyNetMapEvent)) {
-        throw new Error(
-          `Event payload for "${window.ipnEventHandler.Events.netMap}" is not instance of NotifyNetMapEvent`,
-          { cause: ev }
-        );
-      }
-      if (ev.netMapStr) netMap.set(JSON.parse(ev.netMapStr));
+      if (ev.detail.netMapStr) netMap.set(JSON.parse(ev.detail.netMapStr));
     }
   );
 
   window.ipnEventHandler.addEventListener(
     window.ipnEventHandler.Events.panicRecover,
     (ev) => {
-      if (!(ev instanceof window.ipnEventHandler.NotifyPanicRecoverEvent)) {
-        throw new Error(
-          `Event payload for "${window.ipnEventHandler.Events.panicRecover}" is not instance of NotifyPanicRecoverEvent`,
-          { cause: ev }
-        );
-      }
-      errorToast("Panic Recover: " + ev.err);
+      errorToast("Panic Recover: " + ev.detail.err);
     }
   );
 
   window.ipn.run(window.ipnEventHandler);
 
-  function unmountEverything() {
+  async function unmountEverything() {
     if (loadingScreen) {
-      unmount(loadingScreen);
+      await unmount(loadingScreen);
       loadingScreen = undefined;
     }
     if (loginScreen) {
-      unmount(loginScreen);
+      await unmount(loginScreen);
       loginScreen = undefined;
     }
     window.appRouter.unmount();

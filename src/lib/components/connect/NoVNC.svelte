@@ -2,8 +2,10 @@
   import NoVncClient from "@novnc/novnc/lib/rfb";
   import { onMount } from "svelte";
 
+  import TriangleAlert from "lucide-svelte/icons/triangle-alert";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
 
+  import * as Alert from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
   import { Label } from "$lib/components/ui/label";
   import { Input } from "$lib/components/ui/input";
@@ -23,9 +25,12 @@
   let username = $state<string>("");
   let password = $state<string>("");
 
-  let isLoggedIn = $state<boolean>(false);
   let rawChannel = $state<IpnRawTcpChannel | undefined>();
   let noVncClient = $state<NoVncClient | undefined>();
+
+  let isLoading = $state<boolean>(false);
+  let isLoggedIn = $state<boolean>(false);
+  let errorMessage = $state<unknown>();
 
   let el: HTMLDivElement;
 
@@ -46,28 +51,61 @@
   };
 
   async function onLogin() {
-    rawChannel = await IpnRawTcpChannel.connect({
-      port,
-      hostname,
-    });
+    if (isLoading) return;
+    try {
+      isLoading = true;
+      errorMessage = undefined;
 
-    noVncClient = new NoVncClient(el, rawChannel, {
-      credentials: { password, username, target: "" },
-    });
+      if (rawChannel) rawChannel.close();
 
-    noVncClient.scaleViewport = true;
-    noVncClient.resizeSession = true;
+      rawChannel = await IpnRawTcpChannel.connect({
+        port,
+        hostname,
+      });
 
-    isLoggedIn = true;
+      noVncClient = new NoVncClient(el, rawChannel, {
+        credentials: { password, username, target: "" },
+      });
+
+      noVncClient.scaleViewport = true;
+      noVncClient.resizeSession = true;
+
+      noVncClient.addEventListener("securityfailure", (ev) => {
+        errorMessage = ev.detail.reason;
+        isLoggedIn = false;
+      });
+
+      noVncClient.addEventListener("connect", () => {
+        isLoggedIn = true;
+      });
+      noVncClient.addEventListener("disconnect", () => {
+        isLoggedIn = false;
+      });
+
+      noVncClient.addEventListener("credentialsrequired", (ev) => {
+        console.warn(ev);
+      });
+    } catch (err) {
+      console.error(err);
+      errorMessage =
+        err instanceof Error
+          ? err.toString()
+          : typeof err === "string"
+            ? err
+            : JSON.stringify(err, null, 2);
+    } finally {
+      isLoading = false;
+      password = "";
+    }
   }
 </script>
 
 {#if !isLoggedIn}
   <form
     class="px-6 py-4 [&>div]:space-y-2 space-y-6 w-full max-w-96 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border bg-background"
-    onsubmit={(ev) => {
+    onsubmit={async (ev) => {
       ev.preventDefault();
-      onLogin();
+      await onLogin();
     }}
   >
     <div>
@@ -93,6 +131,16 @@
       </p>
     </div>
 
+    {#if typeof errorMessage !== "undefined"}
+      <div>
+        <Alert.Root variant="destructive">
+          <TriangleAlert class="size-4" />
+          <Alert.Title>Session Error</Alert.Title>
+          <Alert.Description>{errorMessage}</Alert.Description>
+        </Alert.Root>
+      </div>
+    {/if}
+
     <div
       class="grid items-center gap-x-2"
       style="grid-template-columns: 1fr 80px;"
@@ -114,8 +162,10 @@
       <Input bind:value={password} type="password" />
     </div>
 
-    <Button type="submit" class="w-full !mt-12">Connect</Button>
+    <Button type="submit" class="w-full !mt-12" disabled={isLoading}>
+      Connect
+    </Button>
   </form>
 {/if}
 
-<div bind:this={el} class="h-full w-full"></div>
+<div bind:this={el} class="h-full w-full" class:invisible={!isLoggedIn}></div>

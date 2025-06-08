@@ -3,7 +3,7 @@ import { mount, unmount, type Component } from "svelte";
 export type AppRoute = { path: string | RegExp; component: Component };
 
 export class AppRouter {
-  protected mountedComponent?: object;
+  protected mount?: object;
 
   public readonly routes: AppRoute[] = [];
   public fallbackComponent: Component;
@@ -27,13 +27,14 @@ export class AppRouter {
     return window.location.hash.replace(/^#/, "").replace(/^\/?/, "/");
   }
 
-  public goto(url: URL) {
+  public goto(url: URL): this {
     history.pushState(null, "", url.toString());
     this.resolve();
+    return this;
   }
 
-  public resolve() {
-    if (this.mountedComponent) unmount(this.mountedComponent);
+  public async resolve(): Promise<this> {
+    if (this.mount) await unmount(this.mount);
 
     let route = this.routes.find(
       (route) =>
@@ -41,13 +42,16 @@ export class AppRouter {
         (route.path instanceof RegExp && route.path.test(this.currentPath))
     );
 
-    this.mountedComponent = mount(
+    this.mount = mount(
       route?.component ? route.component : this.fallbackComponent,
       { target: this.target }
     );
+
+    return this;
   }
 
-  public unmount() {
-    if (this.mountedComponent) unmount(this.mountedComponent);
+  public async unmount(): Promise<this> {
+    if (this.mount) await unmount(this.mount);
+    return this;
   }
 }
