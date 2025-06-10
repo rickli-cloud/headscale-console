@@ -13,6 +13,8 @@ volumes:
     name: selfservice-data
   headscale-data:
     name: headscale-data
+  headscale-socket:
+    name: headscale-socket
 
 services:
   traefik:
