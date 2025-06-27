@@ -39,7 +39,6 @@ import (
 	"tailscale.com/ipn/ipnserver"
 	"tailscale.com/ipn/store/mem"
 	"tailscale.com/logpolicy"
-	"tailscale.com/logtail"
 	"tailscale.com/net/netns"
 	"tailscale.com/net/tsdial"
 	"tailscale.com/safesocket"
@@ -106,23 +105,23 @@ func newIPN(jsConfig js.Value) map[string]any {
 	log.Printf("AdvertiseTags: %v", advertiseTags)
 
 	lpc := getOrCreateLogPolicyConfig(store)
-	c := logtail.Config{
-		Collection: lpc.Collection,
-		PrivateID:  lpc.PrivateID,
+	// c := logtail.Config{
+	// 	Collection: lpc.Collection,
+	// 	PrivateID:  lpc.PrivateID,
 
-		// Compressed requests set HTTP headers that are not supported by the
-		// no-cors fetching mode:
-		CompressLogs: false,
+	// 	// Compressed requests set HTTP headers that are not supported by the
+	// 	// no-cors fetching mode:
+	// 	CompressLogs: false,
 
-		HTTPC: &http.Client{Transport: &noCORSTransport{http.DefaultTransport}},
-	}
-	logtail := logtail.NewLogger(c, log.Printf)
-	logf := logtail.Logf
+	// 	HTTPC: &http.Client{Transport: &noCORSTransport{http.DefaultTransport}},
+	// }
+	// logtail := logtail.NewLogger(c, log.Printf)
+	// logf := logtail.Logf
 
 	sys := new(tsd.System)
 	sys.Set(store)
-	dialer := &tsdial.Dialer{Logf: logf}
-	eng, err := wgengine.NewUserspaceEngine(logf, wgengine.Config{
+	dialer := &tsdial.Dialer{Logf: log.Printf}
+	eng, err := wgengine.NewUserspaceEngine(log.Printf, wgengine.Config{
 		Dialer:        dialer,
 		SetSubsystem:  sys.Set,
 		ControlKnobs:  sys.ControlKnobs(),
@@ -134,7 +133,7 @@ func newIPN(jsConfig js.Value) map[string]any {
 	}
 	sys.Set(eng)
 
-	ns, err := netstack.Create(logf, sys.Tun.Get(), eng, sys.MagicSock.Get(), dialer, sys.DNSManager.Get(), sys.ProxyMapper())
+	ns, err := netstack.Create(log.Printf, sys.Tun.Get(), eng, sys.MagicSock.Get(), dialer, sys.DNSManager.Get(), sys.ProxyMapper())
 	if err != nil {
 		log.Fatalf("netstack.Create: %v", err)
 	}
@@ -155,8 +154,8 @@ func newIPN(jsConfig js.Value) map[string]any {
 	sys.Tun.Get().Start()
 
 	logid := lpc.PublicID
-	srv := ipnserver.New(logf, logid, sys.NetMon.Get())
-	lb, err := ipnlocal.NewLocalBackend(logf, logid, sys, controlclient.LoginDefault)
+	srv := ipnserver.New(log.Printf, logid, sys.NetMon.Get())
+	lb, err := ipnlocal.NewLocalBackend(log.Printf, logid, sys, controlclient.LoginDefault)
 	if err != nil {
 		log.Fatalf("ipnlocal.NewLocalBackend: %v", err)
 	}
@@ -963,7 +962,7 @@ func getOrCreateLogPolicyConfig(state ipn.StateStore) *logpolicy.Config {
 	} else if err != ipn.ErrStateNotExist {
 		log.Printf("Could not get log policy config from state store: %v", err)
 	}
-	config := logpolicy.NewConfig(logtail.CollectionNode)
+	config := logpolicy.NewConfig("")
 	if err := state.WriteState(logPolicyStateKey, config.ToBytes()); err != nil {
 		log.Printf("Could not save log policy config to state store: %v", err)
 	}
