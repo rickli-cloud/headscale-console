@@ -35,7 +35,7 @@ ironrdp = { version = "0.9.1", features = [
 ironrdp-core = "0.1.4"
 ironrdp-cliprdr-format = "0.1.3"
 ironrdp-futures = "0.2.0"
-ironrdp-async = "0.4.0"
+ironrdp-async = "0.6.0"
 
 # TLS
 futures-rustls = { version = "0.26.0", default-features = false, features = ["ring", "tls12", "logging"] }
