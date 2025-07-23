@@ -20,9 +20,9 @@
       "$lib": ["./src/lib"],
       "$lib/*": ["./src/lib/*"],
       "$pkg": ["./wasm/pkg"],
-      "$pkg/*": ["./wasm/pkg/*"]
-      // "$routes": ["./src/routes"],
-      // "$routes/*": ["./src/routes/*"]
+      "$pkg/*": ["./wasm/pkg/*"],
+      "$routes": ["./src/routes"],
+      "$routes/*": ["./src/routes/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.js", "src/**/*.svelte"],

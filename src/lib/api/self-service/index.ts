@@ -1,9 +1,10 @@
-import { selfserviceCap, selfserviceHostname } from "$lib/store/selfservice";
+import { selfserviceCap } from "$lib/store/selfservice";
+import { appConfig } from "$lib/store/config";
 import { get } from "svelte/store";
 
 export class SelfService {
   public static async expireNode(id: string): Promise<void> {
-    const host = get(selfserviceHostname);
+    const host = get(appConfig).selfserviceHostname;
 
     if (!host) {
       throw new Error("Self-Service hostname undefined");
@@ -21,7 +22,7 @@ export class SelfService {
   }
 
   public static async deleteNode(id: string): Promise<void> {
-    const host = get(selfserviceHostname);
+    const host = get(appConfig).selfserviceHostname;
     const cap = get(selfserviceCap);
 
     if (!host) {
@@ -46,7 +47,7 @@ export class SelfService {
   }
 
   public static async getAuthkeys(): Promise<Preauthkey[]> {
-    const host = get(selfserviceHostname);
+    const host = get(appConfig).selfserviceHostname;
 
     if (!host) {
       throw new Error("Self-Service hostname undefined");
@@ -70,7 +71,7 @@ export class SelfService {
     ephemeral?: boolean;
     expiration?: Date;
   }): Promise<{ key?: string; exp?: string; id?: string }> {
-    const host = get(selfserviceHostname);
+    const host = get(appConfig).selfserviceHostname;
     const cap = get(selfserviceCap);
 
     if (!host) {
@@ -110,7 +111,7 @@ export class SelfService {
   }
 
   public static async expireAuthkey(key: string): Promise<void> {
-    const host = get(selfserviceHostname);
+    const host = get(appConfig).selfserviceHostname;
 
     if (!host) {
       throw new Error("Self-Service hostname undefined");
@@ -128,7 +129,7 @@ export class SelfService {
   }
 
   public static async getCap(): Promise<SelfserviceCap> {
-    const host = get(selfserviceHostname);
+    const host = get(appConfig).selfserviceHostname;
 
     if (!host) {
       throw new Error("Self-Service hostname undefined");

@@ -23,7 +23,7 @@
 <div
   {...restProps}
   class={cn(
-    "space-y-6 bg-destructive text-destructive-foreground p-16 min-h-screen",
+    "space-y-6 bg-destructive text-destructive-foreground p-16 min-h-screen w-full",
     restProps.class
   )}
 >

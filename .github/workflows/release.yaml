@@ -27,7 +27,7 @@ jobs:
 
       - name: Build Golang WASM
         run: |
-          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-${{ github.event.release.tag_name }} -s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
+          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w -X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-${{ github.event.release.tag_name }}" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
           wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
           cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
 

@@ -1,37 +1,5 @@
 @import "@xterm/xterm/css/xterm.css";
 
-.dockview-theme-dark {
-  --dv-activegroup-visiblepanel-tab-background-color: hsl(
-    var(--background)
-  ) !important;
-  --dv-inactivegroup-visiblepanel-tab-background-color: hsl(
-    var(--background)
-  ) !important;
-  --dv-tabs-and-actions-container-background-color: hsl(0 0% 7%) !important;
-  --dv-activegroup-hiddenpanel-tab-background-color: hsl(0 0% 7%) !important;
-  --dv-inactivegroup-hiddenpanel-tab-background-color: hsl(0 0% 7%) !important;
-  --dv-background-color: hsl(var(--background)) !important;
-  --dv-group-view-background-color: hsl(var(--background)) !important;
-}
-
-.dv-active-tab::after {
-  @apply hidden;
-}
-
-/* .dv-tab,
-.dv-void-container {
-  @apply border-b;
-}
-.dv-tab {
-  @apply border-r pb-1.5 pt-1 text-sm;
-}
-.dv-active-tab {
-  @apply border-b-0 !bg-background;
-}
-.dv-drop-target-dropzone {
-  @apply !bg-muted/50;
-} */
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -71,7 +39,7 @@
   .dark {
     --background: 0 0% 3.9%;
     --foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
+    --muted: 0 0% 7.8%;
     --muted-foreground: 0 0% 63.9%;
     --popover: 0 0% 3.9%;
     --popover-foreground: 0 0% 98%;
@@ -105,7 +73,7 @@
   }
 
   body {
-    @apply bg-background text-foreground min-w-[420px];
+    @apply bg-background text-foreground;
   }
 
   html,
@@ -119,6 +87,20 @@
 @layer utilities {
   .link {
     @apply text-blue-600 visited:text-blue-700 hover:underline;
+  }
+
+  .scrolltrack-hidden {
+    scrollbar-color: #2a2a2b transparent;
+    scrollbar-width: none;
+  }
+  .scrolltrack-hidden::-webkit-scrollbar-track {
+    @apply border bg-transparent h-0;
+  }
+}
+
+@layer components {
+  .action-card {
+    @apply cursor-pointer select-none bg-muted/50 text-muted-foreground hover:bg-muted/40 hover:text-foreground rounded-lg p-4 flex flex-col justify-between gap-1.5;
   }
 }
 
@@ -134,4 +116,15 @@ label:has(+ input[required=""])::after {
 
 button[data-dialog-close=""] {
   @apply !mt-0;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield; /* Firefox */
 }

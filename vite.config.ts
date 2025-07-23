@@ -44,6 +44,7 @@ export default defineConfig(({}) => {
       alias: {
         $lib: resolve(__dirname, "src/lib"),
         $pkg: resolve(__dirname, "wasm/pkg"),
+        $routes: resolve(__dirname, "src/routes"),
       },
     },
     server: {},

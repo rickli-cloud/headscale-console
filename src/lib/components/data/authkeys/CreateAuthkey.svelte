@@ -1,9 +1,13 @@
 <script lang="ts">
   import type { HTMLAttributes } from "svelte/elements";
+  import { stringify } from "yaml";
 
-  import Send from "lucide-svelte/icons/send";
-  import X from "lucide-svelte/icons/x";
+  import Send from "@lucide/svelte/icons/send";
+  import X from "@lucide/svelte/icons/x";
+  import CopyCheck from "@lucide/svelte/icons/copy-check";
+  import Copy from "@lucide/svelte/icons/copy";
 
+  import * as Dialog from "$lib/components/ui/dialog";
   import { Checkbox } from "$lib/components/ui/checkbox";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
@@ -12,20 +16,20 @@
   import { SelfService } from "$lib/api/self-service";
   import { cn } from "$lib/utils/shadcn";
 
-  import AuthKey from "./AuthKey.svelte";
-
   interface Props extends HTMLAttributes<HTMLFormElement> {
     /** Called to close the popup */
     onsubmit?: () => void;
-    /** Called when a new key was created */
-    onupdate?: () => void;
   }
 
-  const { onsubmit: propsSubmit, onupdate, ...restProps }: Props = $props();
+  const { onsubmit: propsSubmit, ...restProps }: Props = $props();
 
   let reusable = $state<boolean>(false);
   let ephemeral = $state<boolean>(false);
   let expiration = $state<string>("");
+  let keyInfoOpen = $state<boolean>(false);
+  let isCopied = $state<boolean>(false);
+
+  function copy() {}
 
   let result =
     $state<Awaited<ReturnType<typeof SelfService.createAuthkey>>>(/* {
@@ -42,8 +46,6 @@
       ephemeral,
       expiration: new Date(expiration),
     });
-
-    onupdate?.();
   }
 
   const oneMinute = 1000 * 60;
@@ -111,7 +113,48 @@
   <div class="space-y-4">
     <p class="font-semibold">Your new Authkey</p>
 
-    <AuthKey
+    <Dialog.Root bind:open={keyInfoOpen}>
+      <Dialog.Trigger>
+        {#snippet child({ props })}
+          <button {...props} class="p-3 hover:bg-muted/50 text-left w-full">
+            <pre><code
+                >{stringify({
+                  key: `${result?.key?.slice(0, 3)}...${result?.key?.slice(result?.key?.length - 3, result?.key?.length)}`,
+                  expires: result?.exp
+                    ? new Date(result?.exp).toLocaleString()
+                    : "unknown",
+                })}</code
+              ></pre>
+          </button>
+        {/snippet}
+      </Dialog.Trigger>
+
+      <Dialog.Content>
+        <Dialog.Header>
+          <Dialog.Title>Authkey</Dialog.Title>
+          <Dialog.Description>
+            Store this securely and never share it with anyone you don't fully
+            trust!
+          </Dialog.Description>
+        </Dialog.Header>
+
+        <div
+          class="grid grid-cols-[auto,1fr] items-center border rounded px-3 gap-1.5 w-full"
+        >
+          <button onclick={() => copy()}>
+            {#if isCopied}
+              <CopyCheck class="h-4 w-4" />
+            {:else}
+              <Copy class="h-4 w-4" />
+            {/if}
+          </button>
+          <p class="break-all overflow-hidden py-3 text-center font-semibold">
+            {result?.key}
+          </p>
+        </div>
+      </Dialog.Content>
+    </Dialog.Root>
+    <!-- <AuthKey
       authkey={{
         reusable,
         ephemeral,
@@ -122,12 +165,11 @@
         used: false,
         tags: [],
       }}
-      {onupdate}
-    />
+    /> -->
   </div>
 
   <div class="flex items-center justify-end gap-1.5 w-full">
-    <Button type="button" variant="secondary" onclick={propsSubmit}>
+    <Button type="button" variant="outline" onclick={propsSubmit}>
       <X />
       Close
     </Button>

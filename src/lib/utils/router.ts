@@ -20,11 +20,15 @@ export class AppRouter {
 
     window.addEventListener("hashchange", () => this.resolve());
     window.addEventListener("popstate", () => this.resolve());
-    // window.addEventListener("load", () => this.resolve());
   }
 
   public get currentPath(): string {
     return window.location.hash.replace(/^#/, "").replace(/^\/?/, "/");
+  }
+
+  public get searchParams(): URLSearchParams {
+    const raw = window.location.hash.split("?");
+    return new URLSearchParams(raw[raw.length - 1]);
   }
 
   public goto(url: URL): this {
@@ -53,5 +57,30 @@ export class AppRouter {
   public async unmount(): Promise<this> {
     if (this.mount) await unmount(this.mount);
     return this;
+  }
+
+  /** onclick handler for anchor elements to prevent page reload */
+  public anchorOnclickHandler(): (ev: Event) => void {
+    return (ev) => {
+      let target = ev.target as HTMLElement | null;
+      let iterations = 0;
+
+      while (target) {
+        iterations++;
+        if (target instanceof HTMLAnchorElement) break;
+        target = target.parentElement;
+      }
+      if (!target) {
+        console.error(
+          `Failed to find anchor element when handling redirect (failed after ${iterations} iterations)`
+        );
+        return;
+      }
+
+      ev.preventDefault();
+
+      const url = new URL(target.href);
+      this.goto(url);
+    };
   }
 }

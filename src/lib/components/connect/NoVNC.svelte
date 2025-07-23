@@ -11,13 +11,14 @@
   import { Input } from "$lib/components/ui/input";
 
   import { IpnRawTcpChannel } from "$lib/api/tsconnect";
+  import SelectNode from "../data/node/SelectNode.svelte";
 
   interface Props {
-    hostname: string;
+    hostname?: string;
     port?: number;
   }
 
-  const { hostname: initialHostname, port: initialPort = 5900 }: Props =
+  const { hostname: initialHostname = "", port: initialPort = 5900 }: Props =
     $props();
 
   let port = $state<number>(initialPort);
@@ -102,7 +103,7 @@
 
 {#if !isLoggedIn}
   <form
-    class="px-6 py-4 [&>div]:space-y-2 space-y-6 w-full max-w-96 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border bg-background"
+    class="px-6 py-4 [&>div]:space-y-2 space-y-6 w-full max-w-96 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 sm:border bg-background"
     onsubmit={async (ev) => {
       ev.preventDefault();
       await onLogin();
@@ -110,12 +111,8 @@
   >
     <div>
       <Button
-        onclick={() => {
-          let url = new URL(window.location.href);
-          url.search = "";
-          url.hash = "#/";
-          window.appRouter.goto(url);
-        }}
+        onclick={window.appRouter.anchorOnclickHandler()}
+        href="#/"
         variant="link"
         class="text-muted-foreground gap-1 text-xs px-0"
       >
@@ -125,10 +122,10 @@
       <h3 class="scroll-m-20 text-2xl font-semibold tracking-tight">
         VNC Authentication
       </h3>
-      <p class="text-muted-foreground">
+      <!-- <p class="text-muted-foreground">
         A username and/or password may be required, depending on the VNC server
         configuration.
-      </p>
+      </p> -->
     </div>
 
     {#if typeof errorMessage !== "undefined"}
@@ -143,13 +140,13 @@
 
     <div
       class="grid items-center gap-x-2"
-      style="grid-template-columns: 1fr 80px;"
+      style="grid-template-columns: 1fr 4rem;"
     >
       <Label class="required">Host</Label>
-      <Label class="!m-0">Port</Label>
+      <Label class="required !m-0">Port</Label>
 
-      <Input placeholder="Hostname" required bind:value={hostname} />
-      <Input placeholder="Port" type="number" required bind:value={port} />
+      <SelectNode bind:hostname />
+      <Input type="number" required bind:value={port} />
     </div>
 
     <div>

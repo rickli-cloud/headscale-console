@@ -9,6 +9,8 @@
   import { Label } from "$lib/components/ui/label";
   import { Input } from "$lib/components/ui/input";
 
+  import SelectNode from "$lib/components/data/node/SelectNode.svelte";
+
   import { IronErrorKind } from "$lib/components/ironrdp/interfaces/session-event";
 
   import {
@@ -22,14 +24,13 @@
   import { IpnRawTcpChannel } from "$lib/api/tsconnect";
   import { debounce } from "$lib/utils/misc";
   import { appConfig } from "$lib/store/config";
-  import { get } from "svelte/store";
 
   interface Props {
-    hostname: string;
+    hostname?: string;
     port?: number;
   }
 
-  const { hostname: initialHostname, port: initialPort = 3389 }: Props =
+  const { hostname: initialHostname = "", port: initialPort = 3389 }: Props =
     $props();
 
   let port = $state<number>(initialPort);
@@ -101,7 +102,7 @@
         // TODO
         // @ts-expect-error
         module: pkg,
-        debugwasm: get(appConfig).logLevel,
+        debugwasm: $appConfig.logLevel,
         verbose: "true",
         scale: "real",
         flexcenter: "true",
@@ -202,7 +203,7 @@
 
 {#if !isLoggedIn}
   <form
-    class="px-6 py-4 [&>div]:space-y-2 space-y-6 w-full max-w-96 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 border bg-background"
+    class="px-6 py-4 [&>div]:space-y-2 space-y-6 w-full max-w-96 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 sm:border bg-background z-50"
     onsubmit={async (ev) => {
       ev.preventDefault();
       await onLogin();
@@ -210,12 +211,8 @@
   >
     <div>
       <Button
-        onclick={() => {
-          let url = new URL(window.location.href);
-          url.search = "";
-          url.hash = "#/";
-          window.appRouter.goto(url);
-        }}
+        onclick={window.appRouter.anchorOnclickHandler()}
+        href="#/"
         variant="link"
         class="text-muted-foreground gap-1 text-xs px-0"
       >
@@ -240,13 +237,13 @@
 
     <div
       class="grid items-center gap-x-2"
-      style="grid-template-columns: 1fr 80px;"
+      style="grid-template-columns: 1fr 4rem;"
     >
       <Label class="required">Host</Label>
-      <Label class="!m-0">Port</Label>
+      <Label class="required !m-0">Port</Label>
 
-      <Input placeholder="Hostname" required bind:value={hostname} />
-      <Input placeholder="Port" type="number" required bind:value={port} />
+      <SelectNode bind:hostname />
+      <Input type="number" required bind:value={port} />
     </div>
 
     <div>
@@ -256,7 +253,7 @@
 
     <div>
       <Label>Password</Label>
-      <Input required bind:value={password} type="password" />
+      <Input bind:value={password} type="password" />
     </div>
 
     <div>

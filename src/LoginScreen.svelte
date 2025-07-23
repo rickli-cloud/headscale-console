@@ -1,11 +1,10 @@
 <script lang="ts">
-  import ArrowRight from "lucide-svelte/icons/arrow-right";
   import ExternalLink from "lucide-svelte/icons/external-link";
 
   import Button from "$lib/components/ui/button/button.svelte";
+  import Input from "$lib/components/ui/input/input.svelte";
 
   import { QrCode } from "$lib/components/qrcode";
-  import Input from "$lib/components/ui/input/input.svelte";
 
   interface Props {
     url: string;

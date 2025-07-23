@@ -1,7 +1,7 @@
 <script lang="ts">
-  import CopyCheck from "lucide-svelte/icons/copy-check";
-  import TimerOff from "lucide-svelte/icons/timer-off";
-  import Copy from "lucide-svelte/icons/copy";
+  import CopyCheck from "@lucide/svelte/icons/copy-check";
+  import TimerOff from "@lucide/svelte/icons/timer-off";
+  import Copy from "@lucide/svelte/icons/copy";
 
   import * as Dialog from "$lib/components/ui/dialog";
   import { Badge } from "$lib/components/ui/badge";

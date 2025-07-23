@@ -16,14 +16,12 @@
 
   import ConfirmAction from "$lib/components/utils/ConfirmAction.svelte";
 
-  import { encodeConnectParams, type ConnectParams } from "$lib/utils/connect";
   import { selfserviceCap } from "$lib/store/selfservice";
   import { SelfService } from "$lib/api/self-service";
+  import { appConfig } from "$lib/store/config";
   import { shortName } from "$lib/utils/misc";
   import { netMap } from "$lib/store/ipn";
   import { cn } from "$lib/utils/shadcn";
-  import { get } from "svelte/store";
-  import { UserSettingKeys, userSettings } from "$lib/store/settings";
 
   interface Props {
     peer: IPNNetMapPeerNode;
@@ -44,30 +42,13 @@
     return name.split(/\./)[0];
   }
 
-  function handleConnect(proto: ConnectParams["proto"]) {
+  function connectURL(proto: string) {
     const url = new URL(window.location.href);
-
-    url.hash = "#/connect";
-    url.searchParams.set(
-      "opt",
-      encodeConnectParams({ host: peer.name.replace(/\.$/, ""), proto })
-    );
-
-    const settings = get(userSettings);
-
-    if (settings[UserSettingKeys.openConnectNewTab] === "true") {
-      window
-        .open(
-          url.toString(),
-          "_blank",
-          settings[UserSettingKeys.openConnectAsPopUp] === "true"
-            ? "popup"
-            : undefined
-        )
-        ?.focus();
-    } else {
-      window.appRouter.goto(url);
-    }
+    const params = new URLSearchParams();
+    params.set("proto", proto);
+    params.set("host", peer.name.split(".")[0]);
+    url.hash = `#/connect?${params.toString()}`;
+    return url;
   }
 </script>
 
@@ -91,9 +72,9 @@
                 {shortName(user?.DisplayName || user?.LoginName || user?.ID)}
               </Avatar.Fallback>
             </Avatar.Root>
-            <div class="grid flex-1 text-left text-sm leading-tight">
-              <span class="truncate font-semibold">{user?.DisplayName}</span>
-              <span class="truncate text-xs">{user?.LoginName}</span>
+            <div class="grid flex-1 text-left text-sm leading-tight gap-0.5">
+              <p class="truncate font-semibold">{user?.DisplayName}</p>
+              <p class="truncate text-xs">{user?.LoginName}</p>
             </div>
           </div>
         </HoverCard.Content>
@@ -103,12 +84,6 @@
     <div
       class="!mt-2 max-w-96 flex flex-wrap gap-1.5 items-center empty:hidden [&>span]:text-[10px] [&>span]:h-5 [&>span]:px-1.5"
     >
-      <!-- {#if peer.user.replace(/^userid:/, "") === window.ipnProfile?.Config?.UserProfile?.ID?.toString()}
-        <Badge class="flex gap-1 items-center">
-          Owner
-        </Badge>
-      {/if} -->
-
       {#if peer.expired}
         <Badge
           variant="outline"
@@ -203,59 +178,79 @@
 
       <DropdownMenu.Content align="end" class="w-[160px]">
         <DropdownMenu.Group>
+          {@const sshURL = connectURL("ssh")}
           <DropdownMenu.Item
             class="text-xs cursor-pointer"
             disabled={!peer.online || !peer.tailscaleSSHEnabled}
-            onclick={() => handleConnect("ssh")}
+            onclick={() => window.appRouter.goto(sshURL)}
           >
-            <Terminal class="mr-2 size-3" />
-            SSH
+            <a
+              href={sshURL.toString()}
+              class="w-full h-full flex items-center gap-2"
+            >
+              <Terminal class="mr-2 size-4" />
+              <span>SSH</span>
+            </a>
           </DropdownMenu.Item>
 
+          {@const vncURL = connectURL("vnc")}
           <DropdownMenu.Item
             class="text-xs cursor-pointer"
             disabled={!peer.online || peer.os === "js"}
-            onclick={() => handleConnect("vnc")}
+            onclick={() => window.appRouter.goto(vncURL)}
           >
-            <ScreenShare class="mr-2 size-3" />
-            VNC
+            <a
+              href={vncURL.toString()}
+              class="w-full h-full flex items-center gap-2"
+            >
+              <ScreenShare class="mr-2 size-4" />
+              <span>VNC</span>
+            </a>
           </DropdownMenu.Item>
 
+          {@const rdpURL = connectURL("rdp")}
           <DropdownMenu.Item
             class="text-xs cursor-pointer"
             disabled={!peer.online || peer.os === "js"}
-            onclick={() => handleConnect("rdp")}
+            onclick={() => window.appRouter.goto(rdpURL)}
           >
-            <ScreenShare class="mr-2 size-3" />
-            RDP
+            <a
+              href={rdpURL.toString()}
+              class="w-full h-full flex items-center gap-2"
+            >
+              <ScreenShare class="mr-2 size-4" />
+              RDP
+            </a>
           </DropdownMenu.Item>
         </DropdownMenu.Group>
 
-        <DropdownMenu.Separator />
+        {#if $appConfig.selfserviceHostname}
+          <DropdownMenu.Separator />
 
-        <DropdownMenu.Group>
-          <DropdownMenu.Item
-            class="text-xs cursor-pointer hover:!text-red-600"
-            disabled={typeof $selfserviceCap === "undefined" ||
-              !isOwned ||
-              peer.expired}
-            onclick={() => confirmExpire?.open()}
-          >
-            <ShieldOff class="mr-2 size-3" />
-            Expire Session
-          </DropdownMenu.Item>
+          <DropdownMenu.Group>
+            <DropdownMenu.Item
+              class="text-xs cursor-pointer hover:!text-red-600"
+              disabled={typeof $selfserviceCap === "undefined" ||
+                !isOwned ||
+                peer.expired}
+              onclick={() => confirmExpire?.open()}
+            >
+              <ShieldOff class="mr-2 size-4" />
+              Expire Session
+            </DropdownMenu.Item>
 
-          <DropdownMenu.Item
-            class="text-xs cursor-pointer hover:!text-red-600"
-            disabled={typeof $selfserviceCap === "undefined" ||
-              !$selfserviceCap?.nodeDeletion ||
-              !isOwned}
-            onclick={() => confirmDelete?.open()}
-          >
-            <Trash class="mr-2 size-3" />
-            Delete
-          </DropdownMenu.Item>
-        </DropdownMenu.Group>
+            <DropdownMenu.Item
+              class="text-xs cursor-pointer hover:!text-red-600"
+              disabled={typeof $selfserviceCap === "undefined" ||
+                !$selfserviceCap?.nodeDeletion ||
+                !isOwned}
+              onclick={() => confirmDelete?.open()}
+            >
+              <Trash class="mr-2 size-4" />
+              Delete
+            </DropdownMenu.Item>
+          </DropdownMenu.Group>
+        {/if}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </Table.Cell>
@@ -263,16 +258,10 @@
 
 <ConfirmAction
   bind:this={confirmExpire}
-  action={() => {
-    SelfService.expireNode(peer.id);
-    confirmExpire?.close();
-  }}
+  action={() => SelfService.expireNode(peer.id)}
 />
 
 <ConfirmAction
   bind:this={confirmDelete}
-  action={() => {
-    SelfService.deleteNode(peer.id);
-    confirmDelete?.close();
-  }}
+  action={() => SelfService.deleteNode(peer.id)}
 />

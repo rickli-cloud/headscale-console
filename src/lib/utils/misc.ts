@@ -7,26 +7,13 @@ export function hex2a(hexx: string) {
   return str;
 }
 
-export function joinUrl(base: URL | Location, path: string) {
-  let str = "";
-
-  str = str + base.protocol;
-  str = str + "//";
-  str = str + base.hostname;
-  str = str + base.port.length ? ":" + base.port : "";
-  str = str + base.pathname;
-  str = str + base.pathname.endsWith("/") ? "" : "/";
-  str = str + path.replace(/^\//, "");
-
-  return str;
-}
-
 /** Returns a 2 char name mostly used for avatar fallback */
 export function shortName(name: string | number | undefined) {
-  if (typeof name !== "number" && !name?.length) return "?";
+  if (typeof name !== "string" || !name?.length) return "?";
   const split = String(name).split(/\s+/g);
-  if (split.length === 2) return `${split[0][0]}${split[1][0]}`.toUpperCase();
-  return String(name).slice(0, 2).toUpperCase();
+  return split.length === 2
+    ? `${split[0][0]}${split[1][0]}`.toUpperCase()
+    : String(name).slice(0, 2).toUpperCase();
 }
 
 export function debounce<T extends Array<any>>(

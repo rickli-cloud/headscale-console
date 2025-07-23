@@ -7,12 +7,8 @@ export type UserSettings = {
 };
 
 /** Every setting needs to be defined here (used for syncing) */
-export enum UserSettingKeys {
-  /** @type boolean */
-  openConnectNewTab = "open-connect-new-tab",
-  /** @type boolean */
-  openConnectAsPopUp = "open-connect-popup",
-}
+export enum UserSettingKeys {}
+
 const defaultUserSettings: UserSettings = {
   "open-connect-new-tab": null,
   "open-connect-popup": null,

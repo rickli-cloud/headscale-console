@@ -6,104 +6,94 @@ import { Toaster } from "$lib/components/ui/sonner";
 import { CriticalError } from "$lib/components/error";
 
 import { createClient, IpnEventHandler } from "$lib/api/tsconnect";
-import { AppRouter, type AppRoute } from "$lib/utils/router";
 import { loadIpnProfiles, netMap } from "$lib/store/ipn";
 import { loadUserSettings } from "$lib/store/settings";
 import { loadAppConfig } from "./lib/store/config";
+import { AppRouter } from "$lib/utils/router";
 import { errorToast } from "$lib/utils/error";
-import type { Ipn } from "$lib/types/ipn.d";
+
+import routes from "$routes";
 
 import "./app.css";
 
 import LoadingScreen from "./LoadingScreen.svelte";
 import LoginScreen from "./LoginScreen.svelte";
-import Connect from "./Connect.svelte";
-import NotFound from "./404.svelte";
-import App from "./App.svelte";
+import NotFound from "./routes/404.svelte";
 
 declare global {
   interface Window {
-    ipn: IPN;
-    ipnProfiles?: {
-      current?: string;
-      profiles: { [profile: string]: Ipn.Profile };
-      get currentProfile(): Ipn.Profile | undefined;
-    };
-    ipnEventHandler: IpnEventHandler;
-    appRouter: AppRouter;
+    readonly appRouter: AppRouter;
+    readonly ipn: IPN;
+    readonly ipnEventHandler: IpnEventHandler;
+    readonly ipnProfiles: ReturnType<typeof loadIpnProfiles>;
   }
 }
 
-const routes: AppRoute[] = [
-  { path: /^\/?$/, component: App },
-  { path: /^\/?connect\/?$/, component: Connect },
-];
-
 (async () => {
+  mount(ModeWatcher, { target: document.body });
+  mount(Toaster, { target: document.body });
+
   const appEl = document.getElementById("app");
   if (!appEl) {
     throw new Error("Failed to get HTML element #app");
   }
 
-  mount(ModeWatcher, { target: document.body });
-  mount(Toaster, { target: document.body });
-
-  let loadingScreen: object | undefined = mount(LoadingScreen, {
-    target: appEl,
-  });
-  let loginScreen: object | undefined;
-
   let stopped = false;
-
-  window.appRouter = new AppRouter({
-    target: appEl,
-    fallbackComponent: NotFound,
-    routes,
-  });
-
-  let params = new URLSearchParams(window.location.search);
-
-  let authKey = params.get("k") || undefined;
-  let paramsTags = params.get("t") || undefined;
-
-  window.ipnProfiles = {
-    ...loadIpnProfiles(),
-    get currentProfile() {
-      if (!this.current) return undefined;
-      return this.profiles[this.current];
-    },
+  const mounts: {
+    loadingScreen: object | undefined;
+    loginScreen: object | undefined;
+  } = {
+    loadingScreen: mount(LoadingScreen, { target: appEl }),
+    loginScreen: undefined,
   };
 
-  let cfg = await loadAppConfig();
+  const params = new URLSearchParams(window.location.search);
+  const authKey = params.get("k") || undefined;
+  const paramsTags = params.get("t") || undefined;
+
+  Object.assign(window, { ipnProfiles: loadIpnProfiles() });
+
+  const cfg = await loadAppConfig();
 
   loadUserSettings(cfg.defaults);
 
-  window.ipn = await createClient({
-    panicHandler: async (err) => {
-      stopped = true;
-      console.error(err);
-      await unmountEverything();
-      mount(CriticalError, {
-        target: appEl,
-        props: { error: err },
-      });
-    },
-    routeAll: true,
-    authKey,
-    controlURL: cfg.controlUrl,
-    advertiseTags: [...(paramsTags || []), ...cfg.tags].join(";"),
+  Object.assign(window, {
+    ipnEventHandler: new IpnEventHandler(),
+    ipn: await createClient({
+      panicHandler: async (err) => {
+        stopped = true;
+        console.error(err);
+        await unmountEverything();
+        mount(CriticalError, {
+          target: appEl,
+          props: { error: err },
+        });
+      },
+      routeAll: true,
+      authKey,
+      controlURL: cfg.controlUrl,
+      advertiseTags: [...(paramsTags || []), ...cfg.tags].join(";"),
+    }),
+    appRouter: new AppRouter({
+      target: appEl,
+      fallbackComponent: NotFound,
+      routes,
+    }),
   });
-
-  window.ipnEventHandler = new IpnEventHandler();
 
   window.ipnEventHandler.addEventListener(
     window.ipnEventHandler.Events.browseToURL,
     async (ev) => {
-      await unmountEverything();
-      loginScreen = mount(LoginScreen, {
-        target: appEl,
-        props: { url: ev.detail.url },
-      });
+      try {
+        await unmountEverything();
+        mounts.loginScreen = mount(LoginScreen, {
+          target: appEl,
+          props: { url: ev.detail.url },
+        });
+      } catch (err) {
+        console.error(err);
+        errorToast(`Failed to handle browseToURL event: ${err?.toString()}`);
+      }
     }
   );
 
@@ -117,13 +107,7 @@ const routes: AppRoute[] = [
           window.ipn.login();
           break;
         case "Running":
-          window.ipnProfiles = {
-            ...loadIpnProfiles(),
-            get currentProfile() {
-              if (!this.current) return undefined;
-              return this.profiles[this.current];
-            },
-          };
+          Object.assign(window, { ipnProfiles: loadIpnProfiles() });
 
           if (
             !window.ipnProfiles.current ||
@@ -147,7 +131,13 @@ const routes: AppRoute[] = [
   window.ipnEventHandler.addEventListener(
     window.ipnEventHandler.Events.netMap,
     (ev) => {
-      if (ev.detail.netMapStr) netMap.set(JSON.parse(ev.detail.netMapStr));
+      try {
+        if (typeof ev.detail.netMapStr !== "string") return;
+        netMap.set(JSON.parse(ev.detail.netMapStr));
+      } catch (err) {
+        console.error(err);
+        errorToast(`Failed to parse NetMap: ${err?.toString()}`);
+      }
     }
   );
 
@@ -161,13 +151,13 @@ const routes: AppRoute[] = [
   window.ipn.run(window.ipnEventHandler);
 
   async function unmountEverything() {
-    if (loadingScreen) {
-      await unmount(loadingScreen);
-      loadingScreen = undefined;
+    if (mounts.loadingScreen) {
+      await unmount(mounts.loadingScreen);
+      delete mounts.loadingScreen;
     }
-    if (loginScreen) {
-      await unmount(loginScreen);
-      loginScreen = undefined;
+    if (mounts.loginScreen) {
+      await unmount(mounts.loginScreen);
+      delete mounts.loginScreen;
     }
     window.appRouter.unmount();
   }

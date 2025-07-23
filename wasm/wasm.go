@@ -108,11 +108,9 @@ func newIPN(jsConfig js.Value) map[string]any {
 	// c := logtail.Config{
 	// 	Collection: lpc.Collection,
 	// 	PrivateID:  lpc.PrivateID,
-
 	// 	// Compressed requests set HTTP headers that are not supported by the
 	// 	// no-cors fetching mode:
 	// 	CompressLogs: false,
-
 	// 	HTTPC: &http.Client{Transport: &noCORSTransport{http.DefaultTransport}},
 	// }
 	// logtail := logtail.NewLogger(c, log.Printf)

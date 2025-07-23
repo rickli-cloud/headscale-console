@@ -2,7 +2,7 @@ import { get, writable } from "svelte/store";
 
 import type { Ipn } from "$lib/types/ipn.d";
 import { hex2a } from "$lib/utils/misc";
-import { selfserviceCap, selfserviceHostname } from "./selfservice";
+import { selfserviceCap } from "./selfservice";
 import { SelfService } from "$lib/api/self-service";
 import { appConfig } from "./config";
 
@@ -17,13 +17,15 @@ let selfserviceCapFetchLock = false;
 netMap.subscribe(async (netMap) => {
   console.debug("netMap:", netMap);
 
+  const { selfserviceHostname } = get(appConfig);
+
   document.title = netMap?.domain || "";
 
   const selfservicePeer = netMap?.peers.filter(
     (peer) =>
       peer.online &&
       peer?.name &&
-      peer.name.split(/\./)[0] === get(appConfig).selfserviceHostname
+      peer.name.split(/\./)[0] === selfserviceHostname
   )[0];
 
   let cap = get(selfserviceCap);
@@ -33,7 +35,12 @@ netMap.subscribe(async (netMap) => {
     return;
   }
 
-  selfserviceHostname.set(selfservicePeer.name);
+  if (
+    !netMap.peers.find((i) => i.name.split(".")[0] === selfserviceHostname)
+      ?.online
+  ) {
+    return;
+  }
 
   if (cap || selfserviceCapFetchLock) return;
   selfserviceCapFetchLock = true;
@@ -58,6 +65,7 @@ export class IpnStateStorage {
 export function loadIpnProfiles(): {
   current?: string;
   profiles: { [profile: string]: Ipn.Profile };
+  get currentProfile(): Ipn.Profile | undefined;
 } {
   const profiles: { [profile: string]: Ipn.Profile } = {};
 
@@ -90,7 +98,11 @@ export function loadIpnProfiles(): {
   }
 
   return {
-    current: current?.length ? current : undefined,
     profiles,
+    current: current?.length ? current : undefined,
+    get currentProfile() {
+      if (!this.current) return undefined;
+      return this.profiles[this.current];
+    },
   };
 }

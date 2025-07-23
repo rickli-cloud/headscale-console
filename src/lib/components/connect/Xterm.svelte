@@ -9,15 +9,15 @@
   import { onMount } from "svelte";
 
   interface Props {
-    hostname: string;
+    hostname?: string;
     terminalOptions?: ITerminalOptions;
   }
 
-  const { hostname, terminalOptions }: Props = $props();
+  const { hostname: initialHostname = "", terminalOptions }: Props = $props();
 
+  let hostname = $state(initialHostname);
   let username = $state("");
   let session: IPNSSHSession | undefined = $state();
-  let loginListener: IDisposable | undefined = $state();
 
   let el: HTMLDivElement;
 
@@ -45,13 +45,12 @@
     fitAddon.fit();
     terminal.focus();
 
-    attachLoginListener();
+    attachHostnameListener();
 
     return () => {
       window.removeEventListener("beforeunload", beforeUnloadHandler);
 
       session?.close();
-      loginListener?.dispose();
       terminal.dispose();
       fitAddon.dispose();
       webLinksAddon.dispose();
@@ -59,10 +58,53 @@
     };
   });
 
-  function attachLoginListener() {
+  function attachHostnameListener() {
+    terminal.write(`host: ${hostname}`);
+
+    const listener = terminal.onKey(async (ev) => {
+      switch (ev.key) {
+        case "\u0016": // CTRL + v
+          navigator.clipboard
+            .readText()
+            .then((clipboard) => {
+              terminal.write(clipboard);
+              hostname = hostname + clipboard;
+            })
+            .catch((err) => {
+              console.warn("Failed to read text from clipboard:", err);
+            });
+          break;
+        case "\u000c": // CTRL + l
+          hostname = "";
+          await new Promise((r) => terminal.writeln("\r", () => r(null)));
+          terminal.clear();
+          terminal.write(`host: `);
+          break;
+        case "\u007f": // Backspace
+          if (!hostname.length) break;
+          hostname = hostname.slice(0, hostname.length - 1);
+          await new Promise((r) => terminal.writeln("\r", () => r(null)));
+          terminal.clear();
+          terminal.write(`host: ${hostname}`);
+          break;
+        case "\r":
+          listener?.dispose();
+          terminal.writeln("\r");
+          attachUsernameListener();
+          break;
+        default:
+          if (ev.key.length !== 1) break;
+          hostname = hostname + ev.key;
+          terminal.write(ev.key);
+          break;
+      }
+    });
+  }
+
+  function attachUsernameListener() {
     terminal.write(`${hostname} login: `);
 
-    loginListener = terminal.onKey(async (ev) => {
+    const listener = terminal.onKey(async (ev) => {
       switch (ev.key) {
         case "\u0016": // CTRL + v
           navigator.clipboard
@@ -89,7 +131,7 @@
           terminal.write(`${hostname} login: ${username}`);
           break;
         case "\r":
-          loginListener?.dispose();
+          listener?.dispose();
           terminal.writeln("\r");
           login();
           break;
@@ -100,49 +142,49 @@
           break;
       }
     });
+  }
 
-    function login() {
-      let onDataHook: ((data: string) => void) | undefined;
-      terminal.onData((e) => onDataHook?.(e));
+  function login() {
+    let onDataHook: ((data: string) => void) | undefined;
+    terminal.onData((e) => onDataHook?.(e));
 
-      session = window.ipn.ssh(hostname, username.trim(), {
-        writeFn: (input) => {
-          terminal.write(input);
-        },
-        writeErrorFn: (err) => {
-          // callbacks.onError?.(err)
-          terminal.write(err);
-          console.error(err);
-        },
-        setReadFn(hook) {
-          onDataHook = hook;
-        },
-        rows: terminal.rows,
-        cols: terminal.cols,
-        onConnectionProgress: () => {
-          // console.debug("Connection progress");
-        },
-        onConnected: () => {
-          // console.debug("Connected!");
-        },
-        onDone: () => {
-          onDataHook = undefined;
-          session?.close();
-          session = undefined;
-          username = "";
+    session = window.ipn.ssh(hostname, username.trim(), {
+      writeFn: (input) => {
+        terminal.write(input);
+      },
+      writeErrorFn: (err) => {
+        // callbacks.onError?.(err)
+        terminal.write(err);
+        console.error(err);
+      },
+      setReadFn(hook) {
+        onDataHook = hook;
+      },
+      rows: terminal.rows,
+      cols: terminal.cols,
+      onConnectionProgress: () => {
+        // console.debug("Connection progress");
+      },
+      onConnected: () => {
+        // console.debug("Connected!");
+      },
+      onDone: () => {
+        onDataHook = undefined;
+        session?.close();
+        session = undefined;
+        username = "";
 
-          terminal.write("Press any key to continue... ");
+        terminal.write("Press any key to continue... ");
 
-          const cleanupListener = terminal.onKey((ev) => {
-            cleanupListener.dispose();
-            terminal.clear();
-            terminal.reset();
-            attachLoginListener();
-          });
-        },
-        timeoutSeconds: 30,
-      });
-    }
+        const cleanupListener = terminal.onKey((ev) => {
+          cleanupListener.dispose();
+          terminal.clear();
+          terminal.reset();
+          attachHostnameListener();
+        });
+      },
+      timeoutSeconds: 30,
+    });
   }
 
   const beforeUnloadHandler = (event: Event) => {

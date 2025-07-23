@@ -34,7 +34,10 @@
       <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
       <AlertDialog.Action
         class={buttonVariants({ variant: "destructive" })}
-        onclick={action}
+        onclick={() => {
+          action();
+          close();
+        }}
       >
         Continue
       </AlertDialog.Action>

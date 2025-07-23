@@ -9,13 +9,13 @@
   let svg = $state<string>();
 
   onMount(() => {
-    const qr = new QrCode(opt);
-    qr.options.background = "transparent";
-    qr.options.color = "currentcolor";
-    qr.options.container = "svg-viewbox";
-    qr.options.padding = 0;
-
-    svg = qr.svg();
+    svg = new QrCode({
+      background: "transparent",
+      color: "currentcolor",
+      container: "svg-viewbox",
+      padding: 0,
+      ...opt,
+    }).svg();
   });
 </script>
 

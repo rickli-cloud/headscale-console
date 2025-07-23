@@ -1,12 +1,13 @@
 import { writable } from "svelte/store";
 import type { UserSettings } from "./settings";
+import { errorToast } from "$lib/utils/error";
 
 export interface AppConfig {
   logLevel: "OFF" | "ERROR" | "WARN" | "INFO" | "DEBUG" | "TRACE";
   /** Headscale url */
   controlUrl: string;
   /** Used to identify the self-service endpoint */
-  selfserviceHostname: string;
+  selfserviceHostname: string | undefined;
   /** Only apply when using a authkey */
   tags: string[];
   /** User settings defaults. See `./settings` */
@@ -28,7 +29,8 @@ export async function loadAppConfig(): Promise<AppConfig> {
       data = await res.json();
     }
   } catch (err) {
-    console.error("failed to load config", err);
+    console.error("Failed to load config:", err);
+    errorToast("Failed to load app config: " + err?.toString());
   } finally {
     const cfg = applyDefaults(data);
     appConfig.set(cfg);
@@ -43,7 +45,7 @@ function applyDefaults(opt: Partial<AppConfig>): AppConfig {
       import.meta.env.VITE_DEV_HEADSCALE_HOST ||
       window.ipnProfiles?.currentProfile?.ControlURL ||
       new URL("/", window.location.toString()).toString(),
-    selfserviceHostname: "self-service",
+    selfserviceHostname: undefined,
     tags: [],
     defaults: {},
     ...opt,
