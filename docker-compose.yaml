@@ -78,6 +78,8 @@ services:
     pull_policy: always
     restart: always
     command: serve
+    volumes:
+      - ./config.json:/config.json:ro
     expose:
       - 3000
     networks:

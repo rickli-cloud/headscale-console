@@ -5,7 +5,7 @@
 
 **A WebAssembly-powered client for connecting to your Headscale nodes via SSH, VNC, or RDP — directly from the comfort of your browser.** Includes an optional self-service integration for seamless device onboarding and management
 
-![./docs/media/preview.gif](./docs/media/preview.gif)
+![./docs/media/preview-dark.png](./docs/media/preview.png)
 
 ## Features
 
@@ -74,7 +74,17 @@ A full deployment of traefik, headscale, headscale-console & headscale-selfservi
    TRAEFIK_VERSION=latest
    ```
 
-3. Start it all up:
+3. Create `config.json`
+
+   ```json
+   {
+     "selfserviceHostname": "self-service"
+   }
+   ```
+
+   > See [configuration](#configuration) for more
+
+4. Start it all up:
 
    ```sh
    docker compose up -d
@@ -97,7 +107,12 @@ On startup the console tries to load `./config.json`. For the docker image you c
 
 ### Options
 
-Currently still in beta and not yet fully documented. See [`src/lib/store/config.ts`](./src/lib/store/config.ts) for now.
+| Key                 | Type     | Default  | Description                                                                                   |
+| ------------------- | -------- | -------- | --------------------------------------------------------------------------------------------- |
+| logLevel            | string   | "INFO    | "OFF" \| "ERROR" \| "WARN" \| "INFO" \| "DEBUG" \| "TRACE";                                   |
+| controlUrl          | string   | Base URL | The Headscale control url. E.g. `https://headscale.example.com`                               |
+| selfserviceHostname | string   |          | Used to identify the self-service node. If undefined all self-service features will be hidden |
+| tags                | string[] |          | Only apply when using a authkey                                                               |
 
 ## Build from Source
 
