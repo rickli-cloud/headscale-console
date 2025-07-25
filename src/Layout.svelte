@@ -23,9 +23,7 @@
   });
 </script>
 
-<header
-  class="bg-muted w-full pt-4 space-y-6 [&>*]:!max-w-screen-xl [&>*]:!mx-auto"
->
+<header class="bg-muted w-full py-4 [&>*]:!max-w-screen-xl [&>*]:!mx-auto">
   <div class="flex items-center gap-6 justify-between px-6 2xl:px-0">
     <h1 class="text-2xl font-extrabold tracking-tight text-foreground">
       {$netMap?.domain}
@@ -35,7 +33,11 @@
       <UserMenu />
     </div>
   </div>
+</header>
 
+<div
+  class="bg-muted w-full [&>*]:!max-w-screen-xl [&>*]:!mx-auto sticky top-0 z-50 pt-2"
+>
   <nav
     class="flex items-center overflow-x-scroll scrolltrack-hidden px-6 2xl:px-0"
   >
@@ -58,7 +60,7 @@
       {/each}
     {/key}
   </nav>
-</header>
+</div>
 
 <main
   {...restProps}
