@@ -29,7 +29,9 @@
 
   let { peer }: Props = $props();
 
-  let user = $derived($netMap?.users[peer.user?.replace(/^userid:/, "")]);
+  let user = $derived(
+    $netMap?.users[Number("0x" + peer.user?.replace(/^userid:/, ""))]
+  );
   let isOwned = $derived(
     Number(user?.ID) ===
       window.ipnProfiles?.currentProfile?.Config?.UserProfile?.ID
@@ -69,7 +71,9 @@
             <Avatar.Root class="h-8 w-8 rounded-lg">
               <!-- <Avatar.Image src={user.avatar} alt={user.name} /> -->
               <Avatar.Fallback class="rounded-lg">
-                {shortName(user?.DisplayName || user?.LoginName || user?.ID)}
+                {shortName(
+                  user?.DisplayName || user?.LoginName || user?.ID.toString(16)
+                )}
               </Avatar.Fallback>
             </Avatar.Root>
             <div class="grid flex-1 text-left text-sm leading-tight gap-0.5">

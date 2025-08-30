@@ -25,13 +25,13 @@
   const osRegex = /^os:(\S+)$/i;
 
   let filters = $derived({
-    /** with `userid:` prefix */
+    /** with `userid:` prefix (hex) */
     users: filter.split(/\s+/gm).filter((i) => i?.length && userRegex.test(i)),
-    /** without `os:` prefix */
+    /** without `os:` prefix, in lowercase */
     os: filter
       .split(/\s+/gm)
       .filter((i) => i?.length && osRegex.test(i))
-      .map((i) => osRegex.exec(i)?.[1])
+      .map((i) => osRegex.exec(i)?.[1]?.toLowerCase())
       .filter((i) => typeof i !== "undefined"),
     text: filter
       .split(/\s+/gm)
@@ -51,7 +51,7 @@
       return false;
     }
 
-    if (filters.os.length && !filters.os.includes(peer.os)) {
+    if (filters.os.length && !filters.os.includes(peer.os.toLowerCase())) {
       return false;
     }
 
@@ -99,20 +99,23 @@
           {#each Object.values($netMap?.users || {}) as user}
             <DropdownMenu.CheckboxItem
               checked={!filters.users.length ||
-                filters.users.includes(`userid:${user.ID}`)}
+                filters.users.includes(`userid:${user.ID.toString(16)}`)}
               onclick={() => {
                 if (
                   filters.users.length &&
-                  filters.users.includes("userid:" + user.ID)
+                  filters.users.includes("userid:" + user.ID.toString(16))
                 ) {
                   filter = filter
                     .replaceAll(
-                      new RegExp(`(?<!\\S)userid:${user.ID}(?!\\S)`, "g"),
+                      new RegExp(
+                        `(?<!\\S)userid:${user.ID.toString(16)}(?!\\S)`,
+                        "g"
+                      ),
                       " "
                     )
                     .trim();
                 } else {
-                  filter = `${filter.trim()} userid:${user.ID}`
+                  filter = `${filter.trim()} userid:${user.ID.toString(16)}`
                     .trim()
                     .replaceAll(/\s+/g, " ");
                 }
@@ -201,7 +204,7 @@
   </Table.Header>
 
   <Table.Body class="!whitespace-nowrap">
-    {#if $netMap?.self && filterPeer( { os: "js", user: `userid:${window.ipnProfiles?.currentProfile?.Config.UserProfile.ID}`, name: $netMap.self.name } )}
+    {#if $netMap?.self && filterPeer( { os: "js", user: `userid:${window.ipnProfiles?.currentProfile?.Config.UserProfile.ID.toString(16)}`, name: $netMap.self.name } )}
       <Table.Row>
         <Table.Cell class="space-y-1 !align-top">
           <p class="font-semibold">
