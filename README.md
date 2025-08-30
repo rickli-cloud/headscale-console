@@ -157,7 +157,6 @@ docker build . -t headscale-console:custom
 If you do not plan on running the console inside of docker you need to build the executable manually:
 
 ```sh
-cp frontend.go.tmpl dist/frontend.go
 go build main.go
 ```
 
