@@ -17,7 +17,7 @@ let selfserviceCapFetchLock = false;
 netMap.subscribe(async (netMap) => {
   console.debug("netMap:", netMap);
 
-  const { selfserviceHostname } = get(appConfig);
+  const { selfserviceHostname } = get(appConfig) || {};
 
   document.title = netMap?.domain || "";
 
