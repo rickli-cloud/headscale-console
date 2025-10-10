@@ -1,7 +1,6 @@
 name: Unstable release
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
@@ -28,7 +27,7 @@ jobs:
 
       - name: Build Golang WASM
         run: |
-          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-unstable -s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
+          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-unstable-${{ github.sha }} -s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
           wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
           cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
 
@@ -139,7 +138,7 @@ jobs:
         run: deno install
 
       - name: Patch version
-        run: deno --allow-read="package.json" --allow-write="package.json" patch-version.js 0.0.0-unstable
+        run: deno --allow-read="package.json" --allow-write="package.json" patch-version.js 0.0.0-unstable-${{ github.sha }}
 
       - name: Build frontend
         run: deno task build
@@ -186,4 +185,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/rickli-cloud/headscale-console:unstable
           push: true
-          build-args: HEADSCALE_CONSOLE_VERSION=unstable
+          build-args: HEADSCALE_CONSOLE_VERSION=unstable-${{ github.sha }}
