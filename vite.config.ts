@@ -1,5 +1,6 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig, Plugin } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 import { config } from "dotenv";
 
 import { readFileSync } from "node:fs";
@@ -9,6 +10,7 @@ config();
 const {
   /** @see https://vite.dev/guide/build#relative-base */
   BASE_PATH = "./",
+  DISABLE_PWA = "false",
 } = process.env;
 
 const pkg: typeof import("./package.json") = JSON.parse(
@@ -39,7 +41,17 @@ function versionVirtualModulePlugin(): Plugin {
 export default defineConfig(({}) => {
   return {
     base: BASE_PATH,
-    plugins: [versionVirtualModulePlugin(), svelte()],
+    plugins: [
+      versionVirtualModulePlugin(),
+      svelte(),
+      VitePWA({
+        disable: DISABLE_PWA === "true",
+        registerType: "autoUpdate",
+        workbox: {
+          maximumFileSizeToCacheInBytes: 100 * 1024 * 1024, // 100 MiB
+        },
+      }) as Plugin[],
+    ],
     resolve: {
       alias: {
         $lib: resolve(__dirname, "src/lib"),
