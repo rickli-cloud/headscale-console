@@ -21,7 +21,7 @@
     "bits-ui": "^1.8.0",
     "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
-    "lucide-svelte": "^0.476.0",
+    "lucide-svelte": "^0.545.0",
     "mode-watcher": "^0.5.1",
     "shadcn-svelte": "^1.0.0-next.4",
     "svelte": "^5.20.2",
