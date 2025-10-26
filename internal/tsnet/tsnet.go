@@ -12,6 +12,7 @@ type Config struct {
 	Authkey    string
 	ControlURL string
 	StateDir   string
+	Hostname   string
 }
 
 func NewTsnetServer(config Config) (*tsnetImpl.Server, *local.Client, net.Listener, error) {
@@ -23,6 +24,7 @@ func NewTsnetServer(config Config) (*tsnetImpl.Server, *local.Client, net.Listen
 	srv := &tsnetImpl.Server{
 		AuthKey:    config.Authkey,
 		ControlURL: config.ControlURL,
+		Hostname:   config.Hostname,
 		Store:      stateStore,
 		Logf:       log.Printf,
 		Port:       80,

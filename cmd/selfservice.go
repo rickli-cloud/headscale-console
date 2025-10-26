@@ -75,6 +75,7 @@ var selfServiceCmd = &cobra.Command{
 		_, localClient, httpListener, err := tsnet.NewTsnetServer(tsnet.Config{
 			Authkey:    *authkey,
 			ControlURL: controlUrl,
+			Hostname:   hostname,
 			StateDir:   stateDir,
 		})
 
