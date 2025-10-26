@@ -19,23 +19,23 @@ import (
 
 func init() {
 	policyServiceCmd.Flags().StringP("control-url", "c", "", "Public control url of Headscale, used for tsnet connection (required)")
-	viper.BindPFlag("control-url", policyServiceCmd.Flags().Lookup("control-url"))
+	viper.BindPFlag("policyservice.control-url", policyServiceCmd.Flags().Lookup("control-url"))
 	policyServiceCmd.MarkFlagRequired("control-url")
 
 	policyServiceCmd.Flags().StringP("grpc-endpoint", "g", "unix:///var/run/headscale/headscale.sock", "Headscale GRPC endpoint")
-	viper.BindPFlag("grpc-endpoint", policyServiceCmd.Flags().Lookup("grpc-endpoint"))
+	viper.BindPFlag("policyservice.grpc-endpoint", policyServiceCmd.Flags().Lookup("grpc-endpoint"))
 
 	policyServiceCmd.Flags().String("state-dir", "data", "Session data storage location")
-	viper.BindPFlag("state-dir", policyServiceCmd.Flags().Lookup("state-dir"))
+	viper.BindPFlag("policyservice.state-dir", policyServiceCmd.Flags().Lookup("state-dir"))
 
 	policyServiceCmd.Flags().String("hostname", "policy-service", "Node hostname")
-	viper.BindPFlag("hostname", policyServiceCmd.Flags().Lookup("hostname"))
+	viper.BindPFlag("policyservice.hostname", policyServiceCmd.Flags().Lookup("hostname"))
 
 	policyServiceCmd.Flags().String("user", "services@", "User that owns node")
-	viper.BindPFlag("user", policyServiceCmd.Flags().Lookup("user"))
+	viper.BindPFlag("policyservice.user", policyServiceCmd.Flags().Lookup("user"))
 
 	policyServiceCmd.Flags().StringArrayP("advertise-tags", "t", nil, "Advertise tags for this device")
-	viper.BindPFlag("advertise-tags", policyServiceCmd.Flags().Lookup("advertise-tags"))
+	viper.BindPFlag("policyservice.advertise-tags", policyServiceCmd.Flags().Lookup("advertise-tags"))
 
 	rootCmd.AddCommand(policyServiceCmd)
 }
@@ -45,12 +45,12 @@ var policyServiceCmd = &cobra.Command{
 	Short: "A policy-service tsnet server based on the headscale gRPC API",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		grpcEndpoint := viper.GetString("grpc-endpoint")
-		controlUrl := viper.GetString("control-url")
-		stateDir := viper.GetString("state-dir")
-		hostname := viper.GetString("hostname")
-		user := viper.GetString("user")
-		tags := viper.GetStringSlice("advertise-tags")
+		grpcEndpoint := viper.GetString("policyservice.grpc-endpoint")
+		controlUrl := viper.GetString("policyservice.control-url")
+		stateDir := viper.GetString("policyservice.state-dir")
+		hostname := viper.GetString("policyservice.hostname")
+		user := viper.GetString("policyservice.user")
+		tags := viper.GetStringSlice("policyservice.advertise-tags")
 
 		client, err := headscale.NewClient(grpcEndpoint)
 		if err != nil {

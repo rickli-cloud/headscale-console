@@ -17,29 +17,29 @@ import (
 
 func init() {
 	selfServiceCmd.Flags().StringP("control-url", "c", "", "Public control url of Headscale, used for tsnet connection (required)")
-	viper.BindPFlag("control-url", selfServiceCmd.Flags().Lookup("control-url"))
+	viper.BindPFlag("selfservice.control-url", selfServiceCmd.Flags().Lookup("control-url"))
 	selfServiceCmd.MarkFlagRequired("control-url")
 
 	selfServiceCmd.Flags().StringP("grpc-endpoint", "g", "unix:///var/run/headscale/headscale.sock", "Headscale GRPC endpoint")
-	viper.BindPFlag("grpc-endpoint", selfServiceCmd.Flags().Lookup("grpc-endpoint"))
+	viper.BindPFlag("selfservice.grpc-endpoint", selfServiceCmd.Flags().Lookup("grpc-endpoint"))
 
 	selfServiceCmd.Flags().String("state-dir", "data", "Session data storage location")
-	viper.BindPFlag("state-dir", selfServiceCmd.Flags().Lookup("state-dir"))
+	viper.BindPFlag("selfservice.state-dir", selfServiceCmd.Flags().Lookup("state-dir"))
 
 	selfServiceCmd.Flags().String("hostname", "self-service", "Node hostname")
-	viper.BindPFlag("hostname", selfServiceCmd.Flags().Lookup("hostname"))
+	viper.BindPFlag("selfservice.hostname", selfServiceCmd.Flags().Lookup("hostname"))
 
 	selfServiceCmd.Flags().String("user", "services@", "User that owns node")
-	viper.BindPFlag("user", selfServiceCmd.Flags().Lookup("user"))
+	viper.BindPFlag("selfservice.user", selfServiceCmd.Flags().Lookup("user"))
 
 	selfServiceCmd.Flags().StringArrayP("advertise-tags", "t", nil, "Advertise tags for this device")
-	viper.BindPFlag("advertise-tags", selfServiceCmd.Flags().Lookup("advertise-tags"))
+	viper.BindPFlag("selfservice.advertise-tags", selfServiceCmd.Flags().Lookup("advertise-tags"))
 
 	selfServiceCmd.Flags().Bool("allow-authkeys", false, "Allow users to create self-owned authkeys")
-	viper.BindPFlag("allow-authkeys", selfServiceCmd.Flags().Lookup("allow-authkeys"))
+	viper.BindPFlag("selfservice.allow-authkeys", selfServiceCmd.Flags().Lookup("allow-authkeys"))
 
 	selfServiceCmd.Flags().Bool("allow-node-deletion", false, "Allow users to delete their own nodes")
-	viper.BindPFlag("allow-node-deletion", selfServiceCmd.Flags().Lookup("allow-node-deletion"))
+	viper.BindPFlag("selfservice.allow-node-deletion", selfServiceCmd.Flags().Lookup("allow-node-deletion"))
 
 	rootCmd.AddCommand(selfServiceCmd)
 }
@@ -49,15 +49,15 @@ var selfServiceCmd = &cobra.Command{
 	Short: "A self-service tsnet server based on the headscale gRPC API",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		grpcEndpoint := viper.GetString("grpc-endpoint")
-		controlUrl := viper.GetString("control-url")
-		stateDir := viper.GetString("state-dir")
-		hostname := viper.GetString("hostname")
-		user := viper.GetString("user")
-		tags := viper.GetStringSlice("advertise-tags")
+		grpcEndpoint := viper.GetString("selfservice.grpc-endpoint")
+		controlUrl := viper.GetString("selfservice.control-url")
+		stateDir := viper.GetString("selfservice.state-dir")
+		hostname := viper.GetString("selfservice.hostname")
+		user := viper.GetString("selfservice.user")
+		tags := viper.GetStringSlice("selfservice.advertise-tags")
 
-		allowAuthkeys := viper.GetBool("allow-authkeys")
-		allowNodeDeletion := viper.GetBool("allow-node-deletion")
+		allowAuthkeys := viper.GetBool("selfservice.allow-authkeys")
+		allowNodeDeletion := viper.GetBool("selfservice.allow-node-deletion")
 
 		client, err := headscale.NewClient(grpcEndpoint)
 		if err != nil {
