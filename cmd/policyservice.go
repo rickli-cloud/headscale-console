@@ -41,8 +41,8 @@ func init() {
 }
 
 var policyServiceCmd = &cobra.Command{
-	Use:   "serve",
-	Short: "Run server",
+	Use:   "policyservice",
+	Short: "A policy-service tsnet server based on the headscale gRPC API",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		grpcEndpoint := viper.GetString("grpc-endpoint")

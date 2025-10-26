@@ -46,7 +46,7 @@ func init() {
 
 var selfServiceCmd = &cobra.Command{
 	Use:   "selfservice",
-	Short: "A self-service tsnet server based on the headscale GRPC API",
+	Short: "A self-service tsnet server based on the headscale gRPC API",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		grpcEndpoint := viper.GetString("grpc-endpoint")
