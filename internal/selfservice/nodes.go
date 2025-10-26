@@ -2,98 +2,74 @@ package selfservice
 
 import (
 	"context"
-	"net/http"
+	"errors"
 	"strconv"
 	"time"
 
-	"github.com/gorilla/mux"
 	pb "github.com/rickli-cloud/headscale-console/gen/go/headscale/v1"
 	"github.com/rs/zerolog/log"
 )
 
-func handleNodeExpire(client pb.HeadscaleServiceClient) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		node, status := ensureNodeOwnership(mux.Vars(r)["nodeId"], r, client)
-		if status != http.StatusOK {
-			http.Error(w, "", status)
-			return
-		}
-
-		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-		defer cancel()
-
-		_, err := client.ExpireNode(ctx, &pb.ExpireNodeRequest{NodeId: node.Id})
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to expire node")
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	}
-}
-
-func handleNodeDelete(client pb.HeadscaleServiceClient) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		node, status := ensureNodeOwnership(mux.Vars(r)["nodeId"], r, client)
-		if status != http.StatusOK {
-			http.Error(w, "", status)
-			return
-		}
-
-		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
-		defer cancel()
-
-		_, err := client.DeleteNode(ctx, &pb.DeleteNodeRequest{NodeId: node.Id})
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to delete node")
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	}
-}
-
-func ensureNodeOwnership(id string, r *http.Request, client pb.HeadscaleServiceClient) (*pb.Node, int) {
-	if id == "" {
-		log.Debug().Msg("Request lacks nodeId")
-		return nil, http.StatusBadRequest
-	}
-
-	nodeID, err := strconv.ParseUint(id, 10, 64)
+func ExpireNode(client pb.HeadscaleServiceClient, nodeId string, userId string) error {
+	node, err := ensureNodeOwnership(nodeId, userId, client)
 	if err != nil {
-		log.Debug().Err(err).Msg("Failed to parse nodeId")
-		return nil, http.StatusBadRequest
+		return err
 	}
 
-	userId, ok := r.Context().Value("userId").(string)
-	if !ok || len(userId) == 0 {
-		log.Debug().Msg("Invalid request context for userId")
-		return nil, http.StatusUnauthorized
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	nodeRes, err := client.GetNode(ctx, &pb.GetNodeRequest{NodeId: nodeID})
+	_, err = client.ExpireNode(ctx, &pb.ExpireNodeRequest{NodeId: node.Id})
 	if err != nil {
-		log.Error().Err(err).Msg("Failed to grab node based on user provided id")
-		return nil, http.StatusInternalServerError
+		return err
+	}
+
+	return nil
+}
+
+func DeleteNode(client pb.HeadscaleServiceClient, nodeId string, userId string) error {
+	node, err := ensureNodeOwnership(nodeId, userId, client)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = client.DeleteNode(ctx, &pb.DeleteNodeRequest{NodeId: node.Id})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ensureNodeOwnership(nodeId string, userId string, client pb.HeadscaleServiceClient) (*pb.Node, error) {
+	if nodeId == "" {
+		return nil, errors.New("Bad Request: missing nodeId")
+	}
+
+	nodeIdUint64, err := strconv.ParseUint(nodeId, 10, 64)
+	if err != nil {
+		return nil, errors.New("Bad Request: invalid nodeId")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	nodeRes, err := client.GetNode(ctx, &pb.GetNodeRequest{NodeId: nodeIdUint64})
+	if err != nil {
+		return nil, err
 	}
 
 	if strconv.FormatUint(nodeRes.Node.User.Id, 10) != userId {
 		log.Warn().
 			Str("userId", userId).
-			Uint64("nodeId", nodeRes.Node.Id).
-			Uint64("nodeUserID", nodeRes.Node.User.Id).
+			Str("nodeId", strconv.FormatUint(nodeRes.Node.Id, 10)).
+			Str("nodeUserID", strconv.FormatUint(nodeRes.Node.User.Id, 10)).
 			Msg("User tried to perform forbidden action on machine!")
-		return nil, http.StatusForbidden
+		return nil, errors.New("Unauthorized to access this node")
 	}
 
-	return nodeRes.Node, http.StatusOK
+	return nodeRes.Node, nil
 }

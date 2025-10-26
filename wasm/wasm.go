@@ -759,18 +759,30 @@ func (i *jsIPN) fetch(opt js.Value) js.Value {
 			headers = copyObjectToGo(rawHeaders)
 		}
 
+		rawBody := opt.Get("body")
+
 		c := &http.Client{
 			Transport: &http.Transport{
 				DialContext: i.dialer.UserDial,
 			},
 		}
 
-		res, err := c.Do(&http.Request{
-			URL:    parsedUrl,
-			Method: method,
-			Header: headers,
-			// Body: , // TODO
-		})
+		var res *http.Response
+
+		if method == "POST" && rawBody.Type() == js.TypeString {
+			res, err = c.Do(&http.Request{
+				URL:    parsedUrl,
+				Method: method,
+				Header: headers,
+				Body:   io.NopCloser(strings.NewReader(rawBody.String())),
+			})
+		} else {
+			res, err = c.Do(&http.Request{
+				URL:    parsedUrl,
+				Method: method,
+				Header: headers,
+			})
+		}
 
 		if err != nil {
 			return nil, err

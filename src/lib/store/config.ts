@@ -8,6 +8,8 @@ export interface AppConfig {
   controlUrl: string;
   /** Used to identify the self-service endpoint */
   selfserviceHostname: string | undefined;
+  /** Used to identify the policy-service endpoint */
+  policyserviceHostname: string | undefined;
   /** Only apply when using a authkey */
   tags: string[];
   /** User settings defaults. See `./settings` */
@@ -32,22 +34,20 @@ export async function loadAppConfig(): Promise<AppConfig> {
     console.error("Failed to load config:", err);
     errorToast("Failed to load app config: " + err?.toString());
   } finally {
-    const cfg = applyDefaults(data);
+    const cfg: AppConfig = { ...configDefaults, ...data };
     appConfig.set(cfg);
     return cfg;
   }
 }
 
-function applyDefaults(opt: Partial<AppConfig>): AppConfig {
-  return {
-    logLevel: "INFO",
-    controlUrl:
-      import.meta.env.VITE_DEV_HEADSCALE_HOST ||
-      window.ipnProfiles?.currentProfile?.ControlURL ||
-      new URL("/", window.location.toString()).toString(),
-    selfserviceHostname: undefined,
-    tags: [],
-    defaults: {},
-    ...opt,
-  };
-}
+const configDefaults: AppConfig = {
+  logLevel: "INFO",
+  controlUrl:
+    import.meta.env.VITE_DEV_HEADSCALE_HOST ||
+    window.ipnProfiles?.currentProfile?.ControlURL ||
+    new URL("/", window.location.toString()).toString(),
+  selfserviceHostname: undefined,
+  policyserviceHostname: undefined,
+  tags: [],
+  defaults: {},
+};

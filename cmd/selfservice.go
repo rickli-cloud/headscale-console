@@ -1,22 +1,18 @@
 package cmd
 
 import (
-	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
-	pb "github.com/rickli-cloud/headscale-console/gen/go/headscale/v1"
+	"github.com/gorilla/mux"
 	"github.com/rickli-cloud/headscale-console/internal/headscale"
-	"github.com/rickli-cloud/headscale-console/internal/ipnState"
 	"github.com/rickli-cloud/headscale-console/internal/loggingMiddleware"
 	"github.com/rickli-cloud/headscale-console/internal/selfservice"
-	"github.com/rickli-cloud/headscale-console/internal/utils"
+	"github.com/rickli-cloud/headscale-console/internal/tsnet"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"tailscale.com/tsnet"
 )
 
 func init() {
@@ -45,9 +41,6 @@ func init() {
 	selfServiceCmd.Flags().Bool("allow-node-deletion", false, "Allow users to delete their own nodes")
 	viper.BindPFlag("allow-node-deletion", selfServiceCmd.Flags().Lookup("allow-node-deletion"))
 
-	selfServiceCmd.Flags().Bool("allow-non-js", false, "Allow non-js nodes to access the API (not recommended)")
-	viper.BindPFlag("allow-non-js", selfServiceCmd.Flags().Lookup("allow-non-js"))
-
 	rootCmd.AddCommand(selfServiceCmd)
 }
 
@@ -65,112 +58,167 @@ var selfServiceCmd = &cobra.Command{
 
 		allowAuthkeys := viper.GetBool("allow-authkeys")
 		allowNodeDeletion := viper.GetBool("allow-node-deletion")
-		allowNonJS := viper.GetBool("allow-non-js")
-
-		config := selfservice.Config{
-			AllowAuthkeys:     allowAuthkeys,
-			AllowNodeDeletion: allowNodeDeletion,
-			AllowNonJS:        allowNonJS,
-		}
-
-		if len(grpcEndpoint) > 7 && utils.UnixSocketRegex.Match([]byte(grpcEndpoint)) {
-			isSocket, err := utils.IsUnixSocket(utils.UnixSocketRegex.ReplaceAllLiteralString(grpcEndpoint, ""))
-			if err != nil {
-				log.Fatal().Err(err).Msg("Failed to determine if provided unix grpc-endpoint is a socket")
-			}
-			if !isSocket {
-				log.Fatal().Msg("Provided grpc-endpoint seems to be defined as unix socket but could not be opened. Does it exist?")
-			}
-		}
 
 		client, err := headscale.NewClient(grpcEndpoint)
 		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to create GRPC client")
+			log.Fatal().Err(err).Msg("Failed to create gRPC client")
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-
-		var userId uint64
-
-		serviceUserResponse, err := client.ListUsers(ctx, &pb.ListUsersRequest{Name: user})
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to check if user already exists")
-		}
-		if len(serviceUserResponse.Users) == 1 {
-			userId = serviceUserResponse.Users[0].Id
-		} else {
-			newUser, err := client.CreateUser(ctx, &pb.CreateUserRequest{Name: user, DisplayName: user})
-			if err != nil {
-				log.Fatal().Err(err).Msg("Failed to create new user")
-			}
-			userId = newUser.User.Id
-			log.Info().Interface("user", newUser.User).Msg("User did not exist, created a new one")
-		}
-
-		expiration := timestamppb.New(time.Now().Add(1 * time.Minute))
-		log.Debug().Str("expiration", expiration.AsTime().Format("2006-01-02T15:04:05.000Z")).Msg("Creating a new authkey")
-
-		// TODO: Generates a new key at each startup; if a session already exists, this step could be skipped
-		authkey, err := client.CreatePreAuthKey(ctx, &pb.CreatePreAuthKeyRequest{
-			Expiration: expiration,
-			AclTags:    tags,
-			User:       userId,
-			Reusable:   false,
-			Ephemeral:  false,
+		authkey, err := headscale.GrabAuthkey(client, headscale.AuthkeyOptions{
+			Tags: tags,
+			User: user,
 		})
 		if err != nil {
 			log.Fatal().Err(err).Msg("Failed to create a new Authkey")
 		}
 
-		stateStore, err := ipnState.NewFileStateStore(stateDir)
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to create state storage")
-		}
-		log.Debug().Str("location", stateDir).Msg("State storage handler created")
-
-		srv := &tsnet.Server{
-			AuthKey:    authkey.PreAuthKey.Key,
+		_, localClient, httpListener, err := tsnet.NewTsnetServer(tsnet.Config{
+			Authkey:    *authkey,
 			ControlURL: controlUrl,
-			Hostname:   hostname,
-			Logf:       log.Printf,
-			Port:       80,
-			Store:      stateStore,
+			StateDir:   stateDir,
+		})
+
+		router := mux.NewRouter()
+
+		router.Use(loggingMiddleware.NewHandler)
+		router.Use(tsnet.EnforceClientPolicy(localClient))
+
+		router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("OK"))
+		})
+
+		apiRouter := router.PathPrefix("/api/v1/").Subrouter()
+
+		apiRouter.HandleFunc("/cap", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(capMap{
+				AllowAuthkeys:     allowAuthkeys,
+				AllowNodeDeletion: allowNodeDeletion,
+			})
+		}).Methods("GET")
+
+		apiRouter.HandleFunc("/node/{nodeId}", func(w http.ResponseWriter, r *http.Request) {
+			userId, ok := r.Context().Value("userId").(string)
+			if !ok {
+				log.Debug().Msg("Invalid request context for userId")
+				http.Error(w, "", http.StatusUnauthorized)
+				return
+			}
+
+			nodeId := mux.Vars(r)["nodeId"]
+
+			err := selfservice.ExpireNode(client, nodeId, userId)
+			if err != nil {
+				log.Error().Str("requestId", r.Context().Value("requestId").(string)).Err(err).Msg("Failed to expire node")
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		}).Methods("PATCH")
+
+		if allowNodeDeletion {
+			apiRouter.HandleFunc("/node/{nodeId}", func(w http.ResponseWriter, r *http.Request) {
+				userId, ok := r.Context().Value("userId").(string)
+				if !ok {
+					log.Debug().Msg("Invalid request context for userId")
+					http.Error(w, "", http.StatusUnauthorized)
+					return
+				}
+
+				nodeId := mux.Vars(r)["nodeId"]
+
+				err := selfservice.DeleteNode(client, nodeId, userId)
+				if err != nil {
+					log.Error().Str("requestId", r.Context().Value("requestId").(string)).Err(err).Msg("Failed to delete node")
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte("OK"))
+			}).Methods("DELETE")
 		}
 
-		localClient, err := srv.LocalClient()
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to grab local tsnet client")
-		}
+		apiRouter.HandleFunc("/authkey", func(w http.ResponseWriter, r *http.Request) {
+			userId, ok := r.Context().Value("userId").(string)
+			if !ok {
+				log.Debug().Msg("Invalid request context for userId")
+				http.Error(w, "", http.StatusUnauthorized)
+				return
+			}
 
-		httpListener, err := srv.Listen("tcp", ":80")
-		if err != nil {
-			log.Fatal().Err(err).Msg("Failed to start tsnet server")
-		}
+			keys, err := selfservice.ListAuthkeys(client, userId)
 
-		httpHandler := loggingMiddleware.NewHandler(enforceCorsPolicy(selfservice.NewHandler(config, client, localClient)))
+			if err != nil {
+				log.Error().Str("requestId", r.Context().Value("requestId").(string)).Err(err).Msg("Failed to list authkeys")
+				http.Error(w, "", http.StatusInternalServerError)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(keys)
+		}).Methods("GET")
+
+		apiRouter.HandleFunc("/authkey/{key}", func(w http.ResponseWriter, r *http.Request) {
+			userId, ok := r.Context().Value("userId").(string)
+			if !ok {
+				log.Debug().Msg("Invalid request context for userId")
+				http.Error(w, "", http.StatusUnauthorized)
+				return
+			}
+
+			key := mux.Vars(r)["key"]
+
+			err := selfservice.ExpireAuthkey(client, userId, key)
+
+			if err != nil {
+				log.Error().Str("requestId", r.Context().Value("requestId").(string)).Err(err).Msg("Failed to expire authkey")
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("OK"))
+		}).Methods("PATCH")
+
+		if allowAuthkeys {
+			apiRouter.HandleFunc("/authkey", func(w http.ResponseWriter, r *http.Request) {
+				userId, ok := r.Context().Value("userId").(string)
+				if !ok {
+					log.Debug().Msg("Invalid request context for userId")
+					http.Error(w, "", http.StatusUnauthorized)
+					return
+				}
+
+				opt := selfservice.CreateAuthkeyOptions{
+					Reusable:   r.URL.Query().Get("reusable"),
+					Ephemeral:  r.URL.Query().Get("ephemeral"),
+					Expiration: r.URL.Query().Get("expiration"),
+				}
+
+				key, err := selfservice.CreateAuthkey(client, userId, opt)
+				if err != nil {
+					log.Error().Str("requestId", r.Context().Value("requestId").(string)).Err(err).Msg("Failed to create authkey")
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+				json.NewEncoder(w).Encode(key)
+			}).Methods("PUT")
+		}
 
 		log.Info().Str("addr", fmt.Sprintf("http://%s/", hostname)).Msg("Server starting")
 
-		if err = http.Serve(httpListener, httpHandler); err != nil {
+		if err = http.Serve(httpListener, router); err != nil {
 			log.Fatal().Err(err).Msg("Failed to attach http handler")
 		}
 	},
 }
 
-func enforceCorsPolicy(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; script-src 'none'; script-src-elem 'none'; script-src-attr 'none'; style-src 'none'")
-		w.Header().Add("X-Content-Type-Options", "nosniff")
-		w.Header().Add("X-Frame-Options", "DENY")
-
-		if r.Header.Get("Sec-Fetch-Site") != "same-origin" {
-			requestId := r.Context().Value("requestId").(string)
-			log.Debug().Str("requestId", requestId).Msg("Request does not satisfy CORS policy")
-			http.Error(w, "", http.StatusBadRequest)
-			return
-		}
-
-		h.ServeHTTP(w, r)
-	})
+type capMap struct {
+	AllowAuthkeys     bool `json:"authkeys"`
+	AllowNodeDeletion bool `json:"nodeDeletion"`
 }

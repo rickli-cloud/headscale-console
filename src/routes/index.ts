@@ -13,6 +13,7 @@ import KeyRound from "lucide-svelte/icons/key-round";
 import { get } from "svelte/store";
 import { selfserviceCap } from "$lib/store/selfservice";
 import { appConfig } from "$lib/store/config";
+import Policy from "./Policy.svelte";
 
 export interface Route {
   path: RegExp;
@@ -47,6 +48,16 @@ const routes: Route[] = [
     isHidden: () =>
       window.appRouter.currentPath !== "/authkeys" &&
       !get(appConfig).selfserviceHostname,
+  },
+  {
+    path: /^\/?policy\/?(\?.*)?$/i,
+    component: Policy,
+    icon: Server,
+    href: "#/policy",
+    name: "Access Control",
+    isHidden: () =>
+      window.appRouter.currentPath !== "/policy" &&
+      !get(appConfig).policyserviceHostname,
   },
   {
     path: /^\/?settings\/?(\?.*)?$/i,
