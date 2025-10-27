@@ -41,7 +41,7 @@ ironrdp-async = "0.4.0"
 futures-rustls = { version = "0.26.0", default-features = false, features = ["ring", "tls12", "logging"] }
 rustls = { version = "0.23.26", default-features = false, features = ["ring", "tls12", "logging", "read_buf"] }
 ring = { version = "0.17.14", features = ["wasm32_unknown_unknown_js"] }
-rustls-pki-types = { version = "1.10.0", features = ["web"] }
+rustls-pki-types = { version = "1.13.0", features = ["web"] }
 
 # WASM
 wasm-bindgen = "0.2"
