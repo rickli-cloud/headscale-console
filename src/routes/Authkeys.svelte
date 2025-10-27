@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from "svelte";
 
-  import SlidersHorizontal from "@lucide/svelte/icons/sliders-horizontal";
-  import AlertCircleIcon from "@lucide/svelte/icons/alert-circle";
-  import Plus from "@lucide/svelte/icons/plus";
+  import SlidersHorizontal from "lucide-svelte/icons/sliders-horizontal";
+  import AlertCircle from "lucide-svelte/icons/alert-circle";
+  import Plus from "lucide-svelte/icons/plus";
 
   import * as Sheet from "$lib/components/ui/sheet";
   import * as Alert from "$lib/components/ui/alert";
@@ -15,16 +15,16 @@
 
   import { SelfService, type Preauthkey } from "$lib/api/self-service";
   import { selfserviceCap } from "$lib/store/selfservice";
-  import { appConfig } from "$lib/store/config";
   import { errorToast } from "$lib/utils/error";
+  import { appConfig } from "$lib/store/config";
+  import { netMap } from "$lib/store/ipn";
 
   import LoadingScreen from "../LoadingScreen.svelte";
   import Layout from "../Layout.svelte";
-  import CriticalError from "$lib/components/error/CriticalError.svelte";
-  import { netMap } from "$lib/store/ipn";
 
   let authkeys = $state<Preauthkey[]>();
   let loadPromise = $state<Promise<any>>();
+  let loadError = $state<string | null>(null);
   let createAuthkeySheetOpen = $state<boolean>(false);
 
   onMount(() => {
@@ -36,7 +36,7 @@
       .then((result) => (authkeys = result))
       .catch((err) => {
         console.error(err);
-        errorToast("Failed to load Authkeys: " + err?.toString());
+        loadError = err?.toString() || "Unknown error";
       });
   }
 </script>
@@ -53,7 +53,7 @@
   {#if !$appConfig.selfserviceHostname}
     <section class="space-y-10">
       <Alert.Root variant="destructive">
-        <AlertCircleIcon class="size-5" />
+        <AlertCircle class="size-5" />
         <Alert.Title>Self-Service Unavailable</Alert.Title>
         <Alert.Description>
           <p>
@@ -65,7 +65,7 @@
     </section>
   {:else if !$netMap?.peers.find((i) => i.name.split(".")[0] === $appConfig.selfserviceHostname)}
     <Alert.Root variant="destructive">
-      <AlertCircleIcon class="size-5" />
+      <AlertCircle class="size-5" />
       <Alert.Title>Self-Service Unavailable</Alert.Title>
       <Alert.Description>
         <p>
@@ -76,7 +76,7 @@
     </Alert.Root>
   {:else if !$netMap?.peers.find((i) => i.name.split(".")[0] === $appConfig.selfserviceHostname)?.online}
     <Alert.Root variant="destructive">
-      <AlertCircleIcon class="size-5" />
+      <AlertCircle class="size-5" />
       <Alert.Title>Self-Service Unavailable</Alert.Title>
       <Alert.Description>
         <p>
@@ -84,6 +84,16 @@
         </p>
       </Alert.Description>
     </Alert.Root>
+  {:else if loadError}
+    <section class="space-y-10">
+      <Alert.Root variant="destructive">
+        <AlertCircle class="size-5" />
+        <Alert.Title>Failed to load Authkeys</Alert.Title>
+        <Alert.Description>
+          <p>{loadError}</p>
+        </Alert.Description>
+      </Alert.Root>
+    </section>
   {:else}
     {#await loadPromise}
       <LoadingScreen />

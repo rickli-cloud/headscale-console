@@ -1,6 +1,8 @@
+import { get } from "svelte/store";
+
 import { selfserviceCap } from "$lib/store/selfservice";
 import { appConfig } from "$lib/store/config";
-import { get } from "svelte/store";
+import { ServerError } from "$lib/utils/error";
 
 export class SelfService {
   public static async expireNode(id: string): Promise<void> {
@@ -11,13 +13,14 @@ export class SelfService {
     }
 
     const res = await window.ipn.fetch({
-      headers: { "Sec-Fetch-Site": ["same-origin"] },
       url: `http://${host}/api/v1/node/${id}`,
       method: "PATCH",
     });
 
     if (res.status !== 200) {
-      throw new Error("Server error: " + res.status, { cause: res.text() });
+      throw new ServerError("Status " + res.status, {
+        cause: await res.text(),
+      });
     }
   }
 
@@ -36,13 +39,14 @@ export class SelfService {
     }
 
     const res = await window.ipn.fetch({
-      headers: { "Sec-Fetch-Site": ["same-origin"] },
       url: `http://${host}/api/v1/node/${id}`,
       method: "DELETE",
     });
 
     if (res.status !== 200) {
-      throw new Error("Server error: " + res.status, { cause: res.text() });
+      throw new ServerError("Status " + res.status, {
+        cause: await res.text(),
+      });
     }
   }
 
@@ -54,13 +58,14 @@ export class SelfService {
     }
 
     const res = await window.ipn.fetch({
-      headers: { "Sec-Fetch-Site": ["same-origin"] },
       url: `http://${host}/api/v1/authkey`,
       method: "GET",
     });
 
     if (res.status !== 200) {
-      throw new Error("Server error: " + res.status, { cause: res.text() });
+      throw new ServerError("Status " + res.status, {
+        cause: await res.text(),
+      });
     }
 
     return JSON.parse(await res.text());
@@ -98,13 +103,14 @@ export class SelfService {
     console.debug("CreateAuthkey", url.toString());
 
     const res = await window.ipn.fetch({
-      headers: { "Sec-Fetch-Site": ["same-origin"] },
       url: url.toString(),
       method: "PUT",
     });
 
     if (res.status !== 200) {
-      throw new Error("Server error: " + res.status, { cause: res.text() });
+      throw new ServerError("Status " + res.status, {
+        cause: await res.text(),
+      });
     }
 
     return JSON.parse(await res.text());
@@ -118,13 +124,14 @@ export class SelfService {
     }
 
     const res = await window.ipn.fetch({
-      headers: { "Sec-Fetch-Site": ["same-origin"] },
       url: `http://${host}/api/v1/authkey/${key}`,
       method: "PATCH",
     });
 
     if (res.status !== 200) {
-      throw new Error("Server error: " + res.status, { cause: res.text() });
+      throw new ServerError("Status " + res.status, {
+        cause: await res.text(),
+      });
     }
   }
 
@@ -136,12 +143,11 @@ export class SelfService {
     }
 
     const res = await window.ipn.fetch({
-      headers: { "Sec-Fetch-Site": ["same-origin"] },
       url: `http://${host}/api/v1/cap`,
     });
 
     if (res.status !== 200) {
-      throw new Error("Server error: " + res.status);
+      throw new ServerError("Status " + res.status);
     }
 
     return JSON.parse(await res.text());

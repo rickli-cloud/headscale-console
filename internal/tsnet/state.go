@@ -1,4 +1,4 @@
-package ipnState
+package tsnet
 
 import (
 	"os"
@@ -7,22 +7,22 @@ import (
 	"tailscale.com/ipn"
 )
 
-type FileStateStore struct {
+type fileStateStore struct {
 	rootDir string
 }
 
-func NewFileStateStore(rootDir string) (*FileStateStore, error) {
+func newFileStateStore(rootDir string) (*fileStateStore, error) {
 	if err := os.MkdirAll(rootDir, 0700); err != nil {
 		return nil, err
 	}
-	return &FileStateStore{rootDir: rootDir}, nil
+	return &fileStateStore{rootDir: rootDir}, nil
 }
 
-func (fs *FileStateStore) path(id ipn.StateKey) string {
+func (fs *fileStateStore) path(id ipn.StateKey) string {
 	return filepath.Join(fs.rootDir, string(id))
 }
 
-func (fs *FileStateStore) ReadState(id ipn.StateKey) ([]byte, error) {
+func (fs *fileStateStore) ReadState(id ipn.StateKey) ([]byte, error) {
 	p := fs.path(id)
 	bs, err := os.ReadFile(p)
 	if err != nil {
@@ -34,7 +34,7 @@ func (fs *FileStateStore) ReadState(id ipn.StateKey) ([]byte, error) {
 	return bs, nil
 }
 
-func (fs *FileStateStore) WriteState(id ipn.StateKey, bs []byte) error {
+func (fs *fileStateStore) WriteState(id ipn.StateKey, bs []byte) error {
 	p := fs.path(id)
 	dir := filepath.Dir(p)
 	if err := os.MkdirAll(dir, 0700); err != nil {

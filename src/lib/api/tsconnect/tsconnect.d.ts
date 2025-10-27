@@ -140,15 +140,27 @@ declare global {
     | "MachineAuthorized"
     | "MachineInvalid";
 
-  interface IPNFetchOptions {
+  type IPNFetchOptions = IPNFetchOptionsBasic | IPNFetchOptionsPost;
+
+  interface IPNFetchOptionsBasic {
     /** The url to request. Works with magicDNS hostnames */
     url: string;
     /** HTTP method to use for the request */
     method?: string;
     /** Headers to include in the request */
     headers?: Record<string, string[]>;
+    /** Whether to skip TLS verification */
+    // skipTLSVerify?: boolean;
+  }
+  interface IPNFetchOptionsPost {
+    /** The url to request. Works with magicDNS hostnames */
+    url: string;
+    /** HTTP method to use for the request */
+    method?: "POST";
+    /** Headers to include in the request */
+    headers?: Record<string, string[]>;
     /** Body to send with the request */
-    // body?: string;
+    body?: string;
     /** Whether to skip TLS verification */
     // skipTLSVerify?: boolean;
   }
