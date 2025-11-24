@@ -15,6 +15,9 @@ declare global {
     run(callbacks: IPNCallbacks): void;
     login(): void;
     logout(): void;
+    newProfile(): void;
+    deleteProfile(id: string): void;
+    switchProfile(id: string): void;
     ssh(
       host: string,
       username: string,

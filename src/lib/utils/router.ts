@@ -9,6 +9,8 @@ export class AppRouter {
   public fallbackComponent: Component;
   public target: HTMLElement;
 
+  public onResolve?: (path: string) => string;
+
   public constructor(data: {
     target: HTMLElement;
     fallbackComponent: Component;
@@ -23,7 +25,8 @@ export class AppRouter {
   }
 
   public get currentPath(): string {
-    return window.location.hash.replace(/^#/, "").replace(/^\/?/, "/");
+    const wrapper = this.onResolve || ((path) => path);
+    return wrapper(window.location.hash.replace(/^#/, "").replace(/^\/?/, "/"));
   }
 
   public get searchParams(): URLSearchParams {

@@ -1,10 +1,19 @@
-export function hex2a(hexx: string) {
-  let hex = hexx.toString();
-  let str = "";
-  for (let i = 0; i < hex.length; i += 2) {
-    str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+export class Hex {
+  public static encode(str: string): string {
+    let hex = "";
+    for (let i = 0; i < str.length; i++) {
+      hex += str.charCodeAt(i).toString(16).padStart(2, "0");
+    }
+    return hex;
   }
-  return str;
+
+  public static decode(hex: string): string {
+    let str = "";
+    for (let i = 0; i < hex.length; i += 2) {
+      str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+    }
+    return str;
+  }
 }
 
 /** Returns a 2 char name mostly used for avatar fallback */
