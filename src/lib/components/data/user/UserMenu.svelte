@@ -7,6 +7,7 @@
   import { shortName } from "$lib/utils/misc";
 
   import LogoutDialog from "./logout-dialog.svelte";
+  import { ipnStatePrefix } from "$lib/store/ipn";
 
   let logoutDialog: LogoutDialog;
 </script>
@@ -69,16 +70,21 @@
     <DropdownMenu.Separator />
 
     <DropdownMenu.Group>
-      <DropdownMenu.Item class="cursor-pointer" onclick={() => {}} disabled>
+      <DropdownMenu.Item
+        class="cursor-pointer"
+        onclick={() => {
+          delete window.localStorage[ipnStatePrefix + "_current-profile"];
+          // window.ipn.newProfile(); -> Does no keep controlURL and switches to tailscale login
+          window.location.reload();
+        }}
+      >
         <Users />
         Switch User
       </DropdownMenu.Item>
 
       <DropdownMenu.Item
         class="cursor-pointer"
-        onclick={() => {
-          logoutDialog.open();
-        }}
+        onclick={() => logoutDialog.open()}
       >
         <LogOut />
         Log out

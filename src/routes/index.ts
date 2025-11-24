@@ -1,19 +1,20 @@
 import type { Component } from "svelte";
+import { get } from "svelte/store";
 
+import KeyRound from "lucide-svelte/icons/key-round";
 import UsersIcon from "lucide-svelte/icons/users";
 import Server from "lucide-svelte/icons/server";
+import Cog from "lucide-svelte/icons/cog";
+
+import { appConfig } from "$lib/store/config";
 
 import Machines from "./Machines.svelte";
-import Users from "./Users.svelte";
-import Connect from "./Connect.svelte";
 import Settings from "./Settings.svelte";
-import Cog from "lucide-svelte/icons/cog";
 import Authkeys from "./Authkeys.svelte";
-import KeyRound from "lucide-svelte/icons/key-round";
-import { get } from "svelte/store";
-import { selfserviceCap } from "$lib/store/selfservice";
-import { appConfig } from "$lib/store/config";
+import Connect from "./Connect.svelte";
 import Policy from "./Policy.svelte";
+import Users from "./Users.svelte";
+import Auth from "./Auth.svelte";
 
 export interface Route {
   path: RegExp;
@@ -69,6 +70,11 @@ const routes: Route[] = [
   {
     path: /^\/?connect\/?(\?.*)?$/i,
     component: Connect,
+    isHidden: () => true,
+  },
+  {
+    path: /^\/?_internal\/auth/i,
+    component: Auth,
     isHidden: () => true,
   },
 ];

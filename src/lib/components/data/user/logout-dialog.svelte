@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as AlertDialog from "$lib/components/ui/alert-dialog";
   import { buttonVariants } from "$lib/components/ui/button";
+  import { ipnStatePrefix, loadIpnProfiles } from "$lib/store/ipn";
 
   let isOpen = $state(false);
 
@@ -15,6 +16,7 @@
   }
 
   function logout() {
+    delete window.localStorage[ipnStatePrefix + "_current-profile"];
     window.ipn.logout();
   }
 </script>

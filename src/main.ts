@@ -6,7 +6,7 @@ import { Toaster } from "$lib/components/ui/sonner";
 import { CriticalError } from "$lib/components/error";
 
 import { createClient, IpnEventHandler } from "$lib/api/tsconnect";
-import { loadIpnProfiles, netMap } from "$lib/store/ipn";
+import { ipnStatePrefix, loadIpnProfiles, netMap } from "$lib/store/ipn";
 import { loadUserSettings } from "$lib/store/settings";
 import { loadAppConfig } from "./lib/store/config";
 import { AppRouter } from "$lib/utils/router";
@@ -17,8 +17,8 @@ import routes from "$routes";
 import "./app.css";
 
 import LoadingScreen from "./LoadingScreen.svelte";
-import LoginScreen from "./LoginScreen.svelte";
 import NotFound from "./routes/404.svelte";
+import LogoutScreen from "./LogoutScreen.svelte";
 
 declare global {
   interface Window {
@@ -38,14 +38,10 @@ declare global {
     throw new Error("Failed to get HTML element #app");
   }
 
-  let stopped = false;
-  const mounts: {
-    loadingScreen: object | undefined;
-    loginScreen: object | undefined;
-  } = {
-    loadingScreen: mount(LoadingScreen, { target: appEl }),
-    loginScreen: undefined,
-  };
+  let stopped: boolean = false;
+  let loadingScreen: object | undefined = mount(LoadingScreen, {
+    target: appEl,
+  });
 
   const params = new URLSearchParams(window.location.search);
   const authKey = params.get("k") || undefined;
@@ -61,9 +57,8 @@ declare global {
     ipnEventHandler: new IpnEventHandler(),
     ipn: await createClient({
       panicHandler: async (err) => {
-        stopped = true;
         console.error(err);
-        await unmountEverything();
+        await window.appRouter.unmount();
         mount(CriticalError, {
           target: appEl,
           props: { error: err },
@@ -82,29 +77,27 @@ declare global {
   });
 
   window.ipnEventHandler.addEventListener(
-    window.ipnEventHandler.Events.browseToURL,
-    async (ev) => {
-      try {
-        await unmountEverything();
-        mounts.loginScreen = mount(LoginScreen, {
-          target: appEl,
-          props: { url: ev.detail.url },
-        });
-      } catch (err) {
-        console.error(err);
-        errorToast(`Failed to handle browseToURL event: ${err?.toString()}`);
-      }
-    }
-  );
-
-  window.ipnEventHandler.addEventListener(
     window.ipnEventHandler.Events.state,
     async (ev) => {
       console.info("state:", ev.detail.state);
       switch (ev.detail.state) {
         case "NeedsLogin":
           if (stopped) break;
-          window.ipn.login();
+
+          Object.assign(window, { ipnProfiles: loadIpnProfiles() });
+
+          if (loadingScreen) {
+            await unmount(loadingScreen);
+            loadingScreen = undefined;
+          }
+
+          window.appRouter.onResolve = () => "/_internal/auth";
+          window.appRouter.resolve();
+
+          if (!Object.keys(window.ipnProfiles.profiles).length) {
+            window.ipn.login();
+          }
+
           break;
         case "Running":
           Object.assign(window, { ipnProfiles: loadIpnProfiles() });
@@ -116,13 +109,28 @@ declare global {
             throw new Error("Failed to load profile");
           }
 
-          await unmountEverything();
+          window.appRouter.onResolve = undefined;
+
+          if (loadingScreen) {
+            await unmount(loadingScreen);
+            loadingScreen = undefined;
+          }
+
           await window.appRouter.resolve();
 
           break;
         case "Stopped":
           stopped = true;
-          await unmountEverything();
+
+          await window.appRouter.unmount();
+
+          delete window.localStorage[ipnStatePrefix + "_current-profile"];
+
+          mount(LogoutScreen, { target: appEl });
+
+          // window.location.reload();
+          // await window.appRouter.unmount();
+          // loadingScreen = mount(LoadingScreen, { target: appEl });
           break;
       }
     }
@@ -149,16 +157,4 @@ declare global {
   );
 
   window.ipn.run(window.ipnEventHandler);
-
-  async function unmountEverything() {
-    if (mounts.loadingScreen) {
-      await unmount(mounts.loadingScreen);
-      delete mounts.loadingScreen;
-    }
-    if (mounts.loginScreen) {
-      await unmount(mounts.loginScreen);
-      delete mounts.loginScreen;
-    }
-    window.appRouter.unmount();
-  }
 })();

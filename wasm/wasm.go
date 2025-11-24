@@ -198,6 +198,30 @@ func newIPN(jsConfig js.Value) map[string]any {
 			jsIPN.logout()
 			return nil
 		}),
+		"newProfile": js.FuncOf(func(this js.Value, args []js.Value) any {
+			if len(args) != 0 {
+				log.Printf("Usage: newProfile()")
+				return nil
+			}
+			jsIPN.newProfile()
+			return nil
+		}),
+		"deleteProfile": js.FuncOf(func(this js.Value, args []js.Value) any {
+			if len(args) != 1 {
+				log.Printf("Usage: newProfile(id)")
+				return nil
+			}
+			jsIPN.deleteProfile(ipn.ProfileID(args[0].String()))
+			return nil
+		}),
+		"switchProfile": js.FuncOf(func(this js.Value, args []js.Value) any {
+			if len(args) != 1 {
+				log.Printf("Usage: newProfile(id)")
+				return nil
+			}
+			jsIPN.switchProfile(ipn.ProfileID(args[0].String()))
+			return nil
+		}),
 		"ssh": js.FuncOf(func(this js.Value, args []js.Value) any {
 			if len(args) != 3 {
 				log.Printf("Usage: ssh(hostname, userName, termConfig)")
@@ -383,6 +407,18 @@ func (i *jsIPN) logout() {
 		defer cancel()
 		i.lb.Logout(ctx)
 	}()
+}
+
+func (i *jsIPN) newProfile() {
+	go i.lb.NewProfile()
+}
+
+func (i *jsIPN) deleteProfile(id ipn.ProfileID) {
+	go i.lb.DeleteProfile(id)
+}
+
+func (i *jsIPN) switchProfile(id ipn.ProfileID) {
+	go i.lb.SwitchProfile(id)
 }
 
 func (i *jsIPN) tcp(config js.Value) any {

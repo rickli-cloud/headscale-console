@@ -55,4 +55,24 @@ export namespace Ipn {
     LoginName: string;
     DisplayName: string;
   }
+
+  export interface Profiles {
+    [id: string]: {
+      ID: string;
+      Name: string;
+      NetworkProfile: {
+        MagicDNSName: string;
+        DomainName: string;
+      };
+      Key: string;
+      UserProfile: {
+        ID: number;
+        LoginName: string;
+        DisplayName: string;
+      };
+      NodeID: string;
+      LocalUserID: string;
+      ControlURL: string;
+    };
+  }
 }
