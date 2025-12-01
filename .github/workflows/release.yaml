@@ -26,10 +26,13 @@ jobs:
           sudo apt install -y binaryen
 
       - name: Build Golang WASM
-        run: |
-          GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w -X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-${{ github.event.release.tag_name }}" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
-          wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
-          cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
+        run: GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-${{ github.event.release.tag_name }} -s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
+
+      - name: Optimize Golang WASM
+        run: wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
+
+      - name: Copy Golang WASM exec.js
+        run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
 
       - name: Upload golang package
         uses: actions/upload-artifact@v4
@@ -64,51 +67,10 @@ jobs:
           name: rust-wasm-pkg
           path: wasm/pkg/
 
-  test:
+  build:
     needs:
       - build-golang
       - build-rust
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Download golang wasm package
-        uses: actions/download-artifact@v4
-        with:
-          name: golang-wasm-pkg
-          path: src/lib/api/tsconnect/pkg/
-
-      - name: Download rust wasm package
-        uses: actions/download-artifact@v4
-        with:
-          name: rust-wasm-pkg
-          path: wasm/pkg/
-
-      - name: Setup Deno
-        uses: denoland/setup-deno@v2
-        with:
-          deno-version: v2.x
-
-      - name: Install dependencies
-        run: deno install
-
-      # Basic syntax & types check
-      - name: Run checks
-        run: deno task check
-
-      # TODO: proper tests
-      # - name: Run unit tests
-      #   run: deno task test:unit
-
-      # - name: Run e2e tests
-      #   run: deno task test:e2e
-
-  build:
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -204,4 +166,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/rickli-cloud/headscale-console:latest
           push: true
-          build-args: HEADSCALE_CONSOLE_VERSION=${{ github.event.release.tag_name }}
+          build-args: HEADSCALE_CONSOLE_VERSION=v${{ github.event.release.tag_name }}

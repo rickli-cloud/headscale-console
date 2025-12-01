@@ -84,7 +84,6 @@ docker run -it ghcr.io/rickli-cloud/headscale-console:unstable --help
 - `x.x.x`: Specific release versions
 - `x.x.x-pre`: Pre-release versions (potentially unstable)
 - `unstable`: Built on every push to the main branch
-- `next`: Built on every push to the next branch (may contain undocumented features)
 
 #### Docker Compose
 

@@ -1,16 +1,39 @@
-name: Unstable release
+name: Check
 
 on:
   push:
     branches:
-      - main
+      - "*"
+      - "*/*"
+      - "**"
+      - "!main"
 
 jobs:
-  build-golang:
+  golang:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Golang
+        uses: actions/setup-go@v5
+        # with:
+        #   go-version: ""
+
+      - name: Run Golang check
+        run: go vet main.go
+
+  golang-wasm:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      GOOS: js
+      GOARCH: wasm
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -25,13 +48,16 @@ jobs:
           sudo apt update
           sudo apt install -y binaryen
 
+      - name: Run Golang check
+        run: go vet ./wasm/wasm.go
+
       - name: Build Golang WASM
-        run: GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-unstable-${{ github.sha }} -s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
+        run: go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-test-${{ github.sha }} -s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
 
       - name: Optimize Golang WASM
         run: wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
 
-      - name: Copy Golang WASM exec.js
+      - name: Copy WASM exec.js
         run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
 
       - name: Upload golang package
@@ -40,7 +66,7 @@ jobs:
           name: golang-wasm-pkg
           path: src/lib/api/tsconnect/pkg/
 
-  build-rust:
+  rust-wasm:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -67,10 +93,10 @@ jobs:
           name: rust-wasm-pkg
           path: wasm/pkg/
 
-  build:
+  typescript:
     needs:
-      - build-golang
-      - build-rust
+      - golang-wasm
+      - rust-wasm
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -91,7 +117,7 @@ jobs:
           name: rust-wasm-pkg
           path: wasm/pkg/
 
-      - name: Setup deno
+      - name: Setup Deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
@@ -99,52 +125,13 @@ jobs:
       - name: Install dependencies
         run: deno install
 
-      - name: Patch version
-        run: deno --allow-read="package.json" --allow-write="package.json" patch-version.js 0.0.0-unstable-${{ github.sha }}
+      # Basic syntax & types check
+      - name: Run checks
+        run: deno task check
 
-      - name: Build frontend
-        run: deno task build
+      # TODO: proper tests
+      # - name: Run unit tests
+      #   run: deno task test:unit
 
-      - name: Upload app package
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-pkg
-          path: dist/
-
-  publish:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Download app package
-        uses: actions/download-artifact@v4
-        with:
-          name: app-pkg
-          path: dist/
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and publish latest docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          tags: ghcr.io/rickli-cloud/headscale-console:unstable
-          push: true
-          build-args: HEADSCALE_CONSOLE_VERSION=unstable-${{ github.sha }}
+      # - name: Run e2e tests
+      #   run: deno task test:e2e
