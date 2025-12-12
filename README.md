@@ -1,7 +1,7 @@
 # Headscale Console
 
 [![Unstable release](https://github.com/rickli-cloud/headscale-console/actions/workflows/unstable.yaml/badge.svg)](https://github.com/rickli-cloud/headscale-console/actions/workflows/unstable.yaml)
-![Current Headscale Version](https://img.shields.io/badge/Headscale-v0.26-blue)
+![Current Headscale Version](https://img.shields.io/badge/Headscale-v0.27-blue)
 
 **A WebAssembly-powered client for connecting to your Headscale nodes via SSH, VNC, or RDP - directly from the comfort of your browser.**
 
@@ -91,17 +91,17 @@ A full deployment of traefik, headscale, headscale-console, headscale-selfservic
 
 1. **Configure headscale** in `config.yaml`
 
-   See [`config-example.yaml`](https://github.com/juanfont/headscale/blob/v0.26.1/config-example.yaml)
+   See [`config-example.yaml`](https://github.com/juanfont/headscale/blob/v0.27.1/config-example.yaml)
 
 2. **Configure environment variables** in `.env`:
 
    ```sh
    # Required
    HEADSCALE_SERVER_HOSTNAME=headscale.example.com
-   HEADSCALE_VERSION=0.26.1
+   HEADSCALE_VERSION=0.27.1
 
    # Optional
-   HEADSCALE_CONSOLE_VERSION=unstable
+   HEADSCALE_CONSOLE_VERSION=latest
    TRAEFIK_LISTEN_ADDR=0.0.0.0
    TRAEFIK_VERSION=latest
    ```

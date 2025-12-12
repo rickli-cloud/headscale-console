@@ -75,7 +75,7 @@ services:
         condition: service_started
 
   headscale-console:
-    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-unstable}
+    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-latest}
     container_name: headscale-console
     pull_policy: always
     restart: always
@@ -94,7 +94,7 @@ services:
       traefik.http.services.headscale-console.loadbalancer.server.port: 3000
 
   headscale-selfservice:
-    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-unstable}
+    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-latest}
     container_name: headscale-selfservice
     pull_policy: always
     restart: always
@@ -107,7 +107,7 @@ services:
         condition: service_started
 
   headscale-policyservice:
-    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-unstable}
+    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-latest}
     container_name: headscale-policyservice
     pull_policy: always
     restart: always
