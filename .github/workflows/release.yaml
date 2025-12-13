@@ -157,6 +157,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/rickli-cloud/headscale-console:${{ github.event.release.tag_name }}
           push: true
+          build-args: HEADSCALE_CONSOLE_VERSION=${{ github.event.release.tag_name }}
 
       - name: Build latest docker image
         uses: docker/build-push-action@v5
@@ -166,4 +167,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ghcr.io/rickli-cloud/headscale-console:latest
           push: true
-          build-args: HEADSCALE_CONSOLE_VERSION=v${{ github.event.release.tag_name }}
+          build-args: HEADSCALE_CONSOLE_VERSION=${{ github.event.release.tag_name }}
