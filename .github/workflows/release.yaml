@@ -35,7 +35,7 @@ jobs:
         run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
 
       - name: Upload golang package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: golang-wasm-pkg
           path: src/lib/api/tsconnect/pkg/
@@ -62,7 +62,7 @@ jobs:
         run: wasm-pack build --out-name ironrdp --target web
 
       - name: Upload rust wasm package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: rust-wasm-pkg
           path: wasm/pkg/
@@ -80,13 +80,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download golang wasm package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: golang-wasm-pkg
           path: src/lib/api/tsconnect/pkg/
 
       - name: Download rust wasm package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: rust-wasm-pkg
           path: wasm/pkg/
@@ -106,7 +106,7 @@ jobs:
         run: deno task build
 
       - name: Upload app package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: app-pkg
           path: dist/
@@ -122,7 +122,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download app package
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: app-pkg
           path: dist/
