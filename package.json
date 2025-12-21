@@ -21,7 +21,7 @@
     "autoprefixer": "^10.4.20",
     "bits-ui": "^1.8.0",
     "clsx": "^2.1.1",
-    "dotenv": "^16.5.0",
+    "dotenv": "^17.0.0",
     "lucide-svelte": "^0.476.0",
     "mode-watcher": "^0.5.1",
     "monaco-editor": "^0.54.0",
