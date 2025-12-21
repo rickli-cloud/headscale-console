@@ -1,6 +1,8 @@
 import { writable } from "svelte/store";
+
+import toast from "$lib/utils/toast";
+
 import type { UserSettings } from "./settings";
-import { errorToast } from "$lib/utils/error";
 
 export interface AppConfig {
   logLevel: "OFF" | "ERROR" | "WARN" | "INFO" | "DEBUG" | "TRACE";
@@ -32,7 +34,7 @@ export async function loadAppConfig(): Promise<AppConfig> {
     }
   } catch (err) {
     console.error("Failed to load config:", err);
-    errorToast("Failed to load app config: " + err?.toString());
+    toast.error("Failed to load app config: " + err?.toString());
   } finally {
     const cfg: AppConfig = { ...configDefaults, ...data };
     appConfig.set(cfg);

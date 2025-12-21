@@ -46,9 +46,17 @@ export default defineConfig(({}) => {
       svelte(),
       VitePWA({
         disable: DISABLE_PWA === "true",
-        registerType: "autoUpdate",
-        workbox: {
+        strategies: "injectManifest",
+        registerType: "prompt",
+        // injectRegister: null,
+        filename: "sw.ts",
+        srcDir: "src",
+        injectManifest: {
           maximumFileSizeToCacheInBytes: 100 * 1024 * 1024, // 100 MiB
+        },
+        devOptions: {
+          enabled: true,
+          type: "module",
         },
       }) as Plugin[],
     ],
@@ -60,5 +68,8 @@ export default defineConfig(({}) => {
       },
     },
     server: {},
+    optimizeDeps: {
+      exclude: ["node:fs", "fs"],
+    },
   };
 });

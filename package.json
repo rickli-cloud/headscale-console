@@ -45,6 +45,9 @@
     "rxjs": "^7.8.2",
     "svelte-sonner": "^1.0.3",
     "ua-parser-js": "^2.0.3",
+    "workbox-precaching": "^7.4.0",
+    "workbox-routing": "^7.4.0",
+    "workbox-window": "^7.4.0",
     "yaml": "^2.8.0"
   }
 }

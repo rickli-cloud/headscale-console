@@ -136,3 +136,8 @@ input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield; /* Firefox */
 }
+
+div[data-content],
+div[data-title] {
+  @apply w-full;
+}

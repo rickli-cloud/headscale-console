@@ -15,7 +15,6 @@
 
   import { SelfService, type Preauthkey } from "$lib/api/self-service";
   import { selfserviceCap } from "$lib/store/selfservice";
-  import { errorToast } from "$lib/utils/error";
   import { appConfig } from "$lib/store/config";
   import { netMap } from "$lib/store/ipn";
 

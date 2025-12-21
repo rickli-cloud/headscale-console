@@ -8,9 +8,10 @@ import { CriticalError } from "$lib/components/error";
 import { createClient, IpnEventHandler } from "$lib/api/tsconnect";
 import { ipnStatePrefix, loadIpnProfiles, netMap } from "$lib/store/ipn";
 import { loadUserSettings } from "$lib/store/settings";
+import { registerServiceWorker } from "$lib/utils/sw";
 import { loadAppConfig } from "./lib/store/config";
 import { AppRouter } from "$lib/utils/router";
-import { errorToast } from "$lib/utils/error";
+import toast from "$lib/utils/toast";
 
 import routes from "$routes";
 
@@ -18,7 +19,7 @@ import "./app.css";
 
 import LoadingScreen from "./LoadingScreen.svelte";
 import NotFound from "./routes/404.svelte";
-import LogoutScreen from "./LogoutScreen.svelte";
+import Critical from "./Critical.svelte";
 
 declare global {
   interface Window {
@@ -39,13 +40,35 @@ declare global {
   }
 
   let stopped: boolean = false;
+
   let loadingScreen: object | undefined = mount(LoadingScreen, {
     target: appEl,
   });
 
+  registerServiceWorker();
+
+  if (!window.navigator.onLine) {
+    await unmount(loadingScreen);
+    mount(Critical, {
+      target: appEl,
+      props: {
+        title: "Offline",
+        message: "Please check your network connection.",
+      },
+    });
+    return;
+  }
+
   const params = new URLSearchParams(window.location.search);
-  const authKey = params.get("k") || undefined;
-  const paramsTags = params.get("t") || undefined;
+  const urlParameters = {
+    authKey: params.get("authkey") || undefined,
+    tags:
+      (params.get("tags") || "")
+        .split(/\s+|,|;/)
+        ?.map((i) => i.trim())
+        .filter((i) => i.length > 0) || [],
+  };
+  console.debug({ urlParameters });
 
   Object.assign(window, { ipnProfiles: loadIpnProfiles() });
 
@@ -65,9 +88,9 @@ declare global {
         });
       },
       routeAll: true,
-      authKey,
+      authKey: urlParameters.authKey,
       controlURL: cfg.controlUrl,
-      advertiseTags: [...(paramsTags || []), ...cfg.tags].join(";"),
+      advertiseTags: [...urlParameters.tags, ...cfg.tags].join(";"),
     }),
     appRouter: new AppRouter({
       target: appEl,
@@ -126,11 +149,14 @@ declare global {
 
           delete window.localStorage[ipnStatePrefix + "_current-profile"];
 
-          mount(LogoutScreen, { target: appEl });
-
-          // window.location.reload();
-          // await window.appRouter.unmount();
-          // loadingScreen = mount(LoadingScreen, { target: appEl });
+          mount(Critical, {
+            target: appEl,
+            props: {
+              title: "Stopped",
+              message:
+                "The session has ended. Refresh the page to start a new session.",
+            },
+          });
           break;
       }
     }
@@ -144,7 +170,7 @@ declare global {
         netMap.set(JSON.parse(ev.detail.netMapStr));
       } catch (err) {
         console.error(err);
-        errorToast(`Failed to parse NetMap: ${err?.toString()}`);
+        toast.error(`Failed to parse NetMap: ${err?.toString()}`);
       }
     }
   );
@@ -152,7 +178,7 @@ declare global {
   window.ipnEventHandler.addEventListener(
     window.ipnEventHandler.Events.panicRecover,
     (ev) => {
-      errorToast("Panic Recover: " + ev.detail.err);
+      toast.error("Panic Recover: " + ev.detail.err);
     }
   );
 

@@ -12,7 +12,7 @@
   import Time from "$lib/components/utils/Time.svelte";
 
   import { SelfService, type Preauthkey } from "$lib/api/self-service";
-  import { errorToast } from "$lib/utils/error";
+  import toast from "$lib/utils/toast";
 
   interface Props {
     authkeys: Preauthkey[] | undefined;
@@ -38,7 +38,7 @@
       await SelfService.expireAuthkey(key);
     } catch (err) {
       console.error("Failed to expire Authkey:", err);
-      errorToast("Failed to expire Authkey: " + err?.toString());
+      toast.error("Failed to expire Authkey: " + err?.toString());
     }
   }
 </script>

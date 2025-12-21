@@ -15,8 +15,8 @@
 
   import { Policyservice } from "$lib/api/policyservice";
   import { policySchema } from "$lib/utils/policy.js";
-  import { errorToast } from "$lib/utils/error";
   import { appConfig } from "$lib/store/config";
+  import toast from "$lib/utils/toast";
 
   import LoadingScreen from "../LoadingScreen.svelte";
   import Layout from "../Layout.svelte";
@@ -59,7 +59,7 @@
   async function savePolicy(policy: string) {
     Policyservice.setPolicy(policy).catch((err) => {
       console.error(err);
-      errorToast("Failed to save Policy: " + err?.toString());
+      toast.error("Failed to save Policy: " + err?.toString());
     });
   }
 
