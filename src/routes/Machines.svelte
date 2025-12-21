@@ -16,7 +16,7 @@
   </div>
 
   <section
-    class="grid items-center gap-3 grid-cols-[repeat(auto-fill,minmax(192px,auto));]"
+    class="grid items-center gap-3 grid-cols-[repeat(auto-fill,minmax(192px,auto))]"
   >
     <a
       class="action-card h-24"

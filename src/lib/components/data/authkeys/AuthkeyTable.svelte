@@ -146,10 +146,9 @@
             </Alert.Root>
           {/if}
 
-          <div
-            class="grid grid-cols-[auto,1fr] items-center border rounded px-3 gap-1.5 w-full"
-          >
+          <div class="flex items-center border rounded px-3 gap-3 w-full">
             <button
+              class="cursor-pointer"
               onclick={(ev) => {
                 ev.stopPropagation();
                 ev.preventDefault();

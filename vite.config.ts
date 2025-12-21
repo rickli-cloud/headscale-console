@@ -1,5 +1,6 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { defineConfig, Plugin } from "vite";
+import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import { config } from "dotenv";
 
@@ -43,6 +44,7 @@ export default defineConfig(({}) => {
     base: BASE_PATH,
     plugins: [
       versionVirtualModulePlugin(),
+      tailwindcss() as Plugin[],
       svelte(),
       VitePWA({
         disable: DISABLE_PWA === "true",
