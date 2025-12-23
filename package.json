@@ -19,7 +19,7 @@
     "@types/novnc__novnc": "^1.5.0",
     "@types/serviceworker": "^0.0.158",
     "autoprefixer": "^10.4.20",
-    "bits-ui": "^1.8.0",
+    "bits-ui": "^2.0.0",
     "clsx": "^2.1.1",
     "dotenv": "^17.0.0",
     "lucide-svelte": "^0.476.0",
