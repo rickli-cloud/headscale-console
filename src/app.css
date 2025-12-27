@@ -3,8 +3,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@config '../tailwind.config.ts';
-
 @custom-variant dark (&:is(.dark *));
 
 :root {
