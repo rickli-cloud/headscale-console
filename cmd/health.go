@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"net/http"
-	"os"
+	"net/url"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -11,8 +11,14 @@ import (
 )
 
 func init() {
-	healthCmd.Flags().StringP("endpoint", "e", "http://localhost:3000/healthz", "Health check endpoint URL")
-	viper.BindPFlag("endpoint", healthCmd.Flags().Lookup("endpoint"))
+	healthCmd.Flags().StringP("base", "b", "/admin", "HTML base path")
+	viper.BindPFlag("health.base", healthCmd.Flags().Lookup("base"))
+
+	healthCmd.Flags().String("host", "http://localhost:3000", "Server host")
+	viper.BindPFlag("health.host", healthCmd.Flags().Lookup("host"))
+
+	healthCmd.Flags().Int("timeout", 5, "Request timeout in seconds")
+	viper.BindPFlag("health.timeout", healthCmd.Flags().Lookup("timeout"))
 
 	rootCmd.AddCommand(healthCmd)
 }
@@ -22,25 +28,42 @@ var healthCmd = &cobra.Command{
 	Short: "Check the healthz endpoint for a 200 OK",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		endpoint := viper.GetString("endpoint")
-		client := &http.Client{Timeout: 5 * time.Second}
+		prefix := viper.GetString("health.base")
+		base := viper.GetString("health.host")
+		timeout := viper.GetInt("health.timeout")
 
-		log.Debug().Str("endpoint", endpoint).Msg("Performing health check")
-
-		resp, err := client.Get(endpoint)
+		uri, err := url.JoinPath(base, prefix, "healthz")
 		if err != nil {
-			log.Error().Err(err).Str("endpoint", endpoint).Msg("Error connecting to endpoint")
-			os.Exit(1)
+			log.Fatal().Err(err).Msg("Failed to build URI")
 		}
 
+		client := &http.Client{
+			Timeout: time.Duration(timeout) * time.Second,
+		}
+
+		log.Debug().
+			Str("endpoint", uri).
+			Msg("Performing health check")
+
+		resp, err := client.Get(uri)
+		if err != nil {
+			log.Fatal().
+				Err(err).
+				Str("uri", uri).
+				Msg("Error connecting to server")
+		}
 		defer resp.Body.Close()
 
-		if resp.StatusCode == http.StatusOK {
-			log.Info().Str("endpoint", endpoint).Int("status", resp.StatusCode).Msg("Health check successful")
-			os.Exit(0)
+		if resp.StatusCode != http.StatusOK {
+			log.Fatal().
+				Str("uri", uri).
+				Int("status", resp.StatusCode).
+				Msg("Health check failed")
 		}
 
-		log.Error().Str("endpoint", endpoint).Int("status", resp.StatusCode).Msg("Health check failed")
-		os.Exit(1)
+		log.Info().
+			Str("uri", uri).
+			Int("status", resp.StatusCode).
+			Msg("Health check successful")
 	},
 }
