@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:gowasm": "GOOS=js GOARCH=wasm go build -trimpath -ldflags \"-s -w\" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go && wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm",
+    "build:rustwasm": "cd wasm && wasm-pack build --out-name ironrdp --target web",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
   },

@@ -23,7 +23,7 @@
     (ev) => {
       console.info("BrowseToUrl", ev.detail.url);
       url = ev.detail.url;
-    }
+    },
   );
 
   onMount(() => {
@@ -31,9 +31,9 @@
   });
 </script>
 
-<div class="min-w-screen min-h-screen grid place-items-center">
+<div class="w-svw h-svh overflow-x-hidden grid place-items-center">
   <main
-    class="h-auto min-h-0 w-full max-w-screen-sm xl:max-w-screen-xl xl:grid xl:grid-cols-[2fr,1px,1fr] gap-8 items-center py-12 px-8"
+    class="h-auto min-h-0 w-full max-w-screen-sm xl:max-w-7xl xl:grid xl:grid-cols-[1fr_1px_1fr] gap-8 items-center py-12 px-8"
   >
     <div class="w-full space-y-3 order-3">
       <h1
@@ -42,13 +42,12 @@
         Authenticate
       </h1>
       {#if !Object.keys(profiles || {}).length || url}
-        <p class="text-muted-foreground">
+        <p class="text-muted-foreground xl:max-w-96">
           Scan the QR code or open the link to authenticate. Keep this page open
-          while authenticating. Authkeys and tags can be passed through using
-          the appropriate URL parameters.
+          while authenticating.
         </p>
 
-        <div class="!my-6">
+        <div class="my-6!">
           <Button
             href={url}
             target="_blank"
@@ -65,7 +64,7 @@
           <!-- Continue an existing session or start a new one -->
         </p>
 
-        <div class="!my-6">
+        <div class="my-6!">
           <Button
             variant="ghost"
             class="w-full text-left justify-start"

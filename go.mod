@@ -6,14 +6,10 @@ toolchain go1.24.2
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/gorilla/mux v1.8.1
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.16.0
 	golang.org/x/crypto v0.37.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a
-	google.golang.org/grpc v1.72.0
-	google.golang.org/protobuf v1.36.6
 	tailscale.com v1.82.5
 )
 
@@ -55,11 +51,9 @@ require (
 	github.com/hdevalence/ed25519consensus v0.2.0 // indirect
 	github.com/illarion/gonotify/v3 v3.0.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/insomniacslk/dhcp v0.0.0-20231206064809-8c70d406f6d2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jsimonetti/rtnetlink v1.4.0 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
-	github.com/kortschak/wol v0.0.0-20200729010619-da482cc4850a // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
@@ -71,7 +65,6 @@ require (
 	github.com/mitchellh/go-ps v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/prometheus-community/pro-bing v0.4.0 // indirect
 	github.com/safchain/ethtool v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
@@ -87,7 +80,6 @@ require (
 	github.com/tailscale/peercred v0.0.0-20250107143737-35a0c7bd7edc // indirect
 	github.com/tailscale/web-client-prebuilt v0.0.0-20250124233751-d4cd19a26976 // indirect
 	github.com/tailscale/wireguard-go v0.0.0-20250107165329-0b8b35511f19 // indirect
-	github.com/u-root/uio v0.0.0-20240224005618-d2acac8f3701 // indirect
 	github.com/vishvananda/netns v0.0.4 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	go4.org/mem v0.0.0-20240501181205-ae6ca9944745 // indirect
@@ -103,7 +95,6 @@ require (
 	golang.org/x/tools v0.30.0 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard/windows v0.5.3 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250425173222-7b384671a197 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gvisor.dev/gvisor v0.0.0-20250205023644-9414b50a5633 // indirect
