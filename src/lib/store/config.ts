@@ -8,10 +8,6 @@ export interface AppConfig {
   logLevel: "OFF" | "ERROR" | "WARN" | "INFO" | "DEBUG" | "TRACE";
   /** Headscale url */
   controlUrl: string;
-  /** Used to identify the self-service endpoint */
-  selfserviceHostname: string | undefined;
-  /** Used to identify the policy-service endpoint */
-  policyserviceHostname: string | undefined;
   /** Only apply when using a authkey */
   tags: string[];
   /** User settings defaults. See `./settings` */
@@ -48,8 +44,6 @@ const configDefaults: AppConfig = {
     import.meta.env.VITE_DEV_HEADSCALE_HOST ||
     window.ipnProfiles?.currentProfile?.ControlURL ||
     new URL("/", window.location.toString()).toString(),
-  selfserviceHostname: undefined,
-  policyserviceHostname: undefined,
   tags: [],
   defaults: {},
 };

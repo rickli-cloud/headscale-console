@@ -2,10 +2,8 @@
   import MoreHorizontal from "lucide-svelte/icons/more-horizontal";
   import ScreenShare from "lucide-svelte/icons/screen-share";
   import ClockAlert from "lucide-svelte/icons/clock-alert";
-  import ShieldOff from "lucide-svelte/icons/shield-off";
   import DoorOpen from "lucide-svelte/icons/door-open";
   import Terminal from "lucide-svelte/icons/terminal";
-  import Trash from "lucide-svelte/icons/trash-2";
 
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu";
   import * as HoverCard from "$lib/components/ui/hover-card";
@@ -14,11 +12,6 @@
   import { Button } from "$lib/components/ui/button";
   import { Badge } from "$lib/components/ui/badge";
 
-  import ConfirmAction from "$lib/components/utils/ConfirmAction.svelte";
-
-  import { selfserviceCap } from "$lib/store/selfservice";
-  import { SelfService } from "$lib/api/self-service";
-  import { appConfig } from "$lib/store/config";
   import { shortName } from "$lib/utils/misc";
   import { netMap } from "$lib/store/ipn";
   import { cn } from "$lib/utils/shadcn";
@@ -30,15 +23,8 @@
   let { peer }: Props = $props();
 
   let user = $derived(
-    $netMap?.users[Number("0x" + peer.user?.replace(/^userid:/, ""))]
+    $netMap?.users[Number("0x" + peer.user?.replace(/^userid:/, ""))],
   );
-  let isOwned = $derived(
-    Number(user?.ID) ===
-      window.ipnProfiles?.currentProfile?.Config?.UserProfile?.ID
-  );
-
-  let confirmExpire = $state<ConfirmAction>();
-  let confirmDelete = $state<ConfirmAction>();
 
   function parseName(name: string): string {
     return name.split(/\./)[0];
@@ -55,7 +41,7 @@
 </script>
 
 <Table.Row>
-  <Table.Cell class="space-y-1 !align-top">
+  <Table.Cell class="space-y-1 align-top!">
     <p class="font-semibold">
       {parseName(peer.name)}
     </p>
@@ -72,7 +58,7 @@
               <!-- <Avatar.Image src={user.avatar} alt={user.name} /> -->
               <Avatar.Fallback class="rounded-lg">
                 {shortName(
-                  user?.DisplayName || user?.LoginName || user?.ID.toString(16)
+                  user?.DisplayName || user?.LoginName || user?.ID.toString(16),
                 )}
               </Avatar.Fallback>
             </Avatar.Root>
@@ -86,7 +72,7 @@
     </p>
 
     <div
-      class="!mt-2 max-w-96 flex flex-wrap gap-1.5 items-center empty:hidden [&>span]:text-[10px] [&>span]:h-5 [&>span]:px-1.5"
+      class="mt-2! max-w-96 flex flex-wrap gap-1.5 items-center empty:hidden [&>span]:text-[10px] [&>span]:h-5 [&>span]:px-1.5"
     >
       {#if peer.expired}
         <Badge
@@ -120,7 +106,7 @@
     </div>
   </Table.Cell>
 
-  <Table.Cell class="space-y-1 !align-top">
+  <Table.Cell class="space-y-1 align-top!">
     {#each [...peer.addresses, ...(peer.routes || [])] as addr}
       <p>
         {addr}
@@ -128,7 +114,7 @@
     {/each}
   </Table.Cell>
 
-  <Table.Cell class="space-y-1 !align-top">
+  <Table.Cell class="space-y-1 align-top!">
     <div>
       {peer.os}
       <span class="text-xs text-muted-foreground">
@@ -141,7 +127,7 @@
     </div>
   </Table.Cell>
 
-  <Table.Cell class="space-y-1.5 !align-top">
+  <Table.Cell class="space-y-1.5 align-top!">
     <div class="flex items-center gap-1.5 text-xs">
       <div
         class="rounded full w-2 h-2 mt-0.5"
@@ -164,7 +150,7 @@
     </div>
   </Table.Cell>
 
-  <Table.Cell class="!align-top flex flex-col gap-1.5">
+  <Table.Cell class="align-top! flex flex-col gap-1.5">
     <DropdownMenu.Root>
       <DropdownMenu.Trigger class="ml-auto">
         {#snippet child({ props })}
@@ -180,7 +166,7 @@
         {/snippet}
       </DropdownMenu.Trigger>
 
-      <DropdownMenu.Content align="end" class="w-[160px]">
+      <DropdownMenu.Content align="end" class="w-40">
         <DropdownMenu.Group>
           {@const sshURL = connectURL("ssh")}
           <DropdownMenu.Item
@@ -227,45 +213,7 @@
             </a>
           </DropdownMenu.Item>
         </DropdownMenu.Group>
-
-        {#if $appConfig.selfserviceHostname}
-          <DropdownMenu.Separator />
-
-          <DropdownMenu.Group>
-            <DropdownMenu.Item
-              class="text-xs cursor-pointer hover:!text-red-600"
-              disabled={typeof $selfserviceCap === "undefined" ||
-                !isOwned ||
-                peer.expired}
-              onclick={() => confirmExpire?.open()}
-            >
-              <ShieldOff class="mr-2 size-4" />
-              Expire Session
-            </DropdownMenu.Item>
-
-            <DropdownMenu.Item
-              class="text-xs cursor-pointer hover:!text-red-600"
-              disabled={typeof $selfserviceCap === "undefined" ||
-                !$selfserviceCap?.nodeDeletion ||
-                !isOwned}
-              onclick={() => confirmDelete?.open()}
-            >
-              <Trash class="mr-2 size-4" />
-              Delete
-            </DropdownMenu.Item>
-          </DropdownMenu.Group>
-        {/if}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </Table.Cell>
 </Table.Row>
-
-<ConfirmAction
-  bind:this={confirmExpire}
-  action={() => SelfService.expireNode(peer.id)}
-/>
-
-<ConfirmAction
-  bind:this={confirmDelete}
-  action={() => SelfService.deleteNode(peer.id)}
-/>
