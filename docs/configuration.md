@@ -1,15 +1,52 @@
 # Configuration
 
+> [!NOTE]
 > Configuration is **completely optional**
 
-On startup the console tries to load `./config.json`. For the docker image you can mount `/config.json` (or somewhere else defined with the configfile flag).
+On startup the app tries to load `./config.json`.
+
+**Docker**: Mount `/config.json`
+
+**Static**: Add `config.json` to root
+
+## Full Config Example
+
+```json
+{
+  "logLevel": "INFO",
+  "controlUrl": "https://headscale.example.com",
+  "tags": ["tag:js"]
+}
+```
 
 ## Options
 
-| Key                   | Type     | Default  | Description                                                                                       |
-| --------------------- | -------- | -------- | ------------------------------------------------------------------------------------------------- |
-| logLevel              | string   | "INFO    | OFF \| ERROR \| WARN \| INFO \| DEBUG \| TRACE                                                    |
-| controlUrl            | string   | Base URL | The Headscale control url. E.g. `https://headscale.example.com`                                   |
-| selfserviceHostname   | string   |          | Used to identify the self-service node. If undefined all self-service features will be hidden     |
-| policyserviceHostname | string   |          | Used to identify the policy-service node. If undefined all policy-service features will be hidden |
-| tags                  | string[] |          | Tags applied to clients. (Only apply when using a authkey)                                        |
+### logLevel
+
+> Console log level. Useful for debugging.
+
+**Type**: `String` (enum)
+
+**Default**: `INFO`
+
+**Options**: `OFF`, `ERROR`, `WARN`, `INFO`, `DEBUG`, `TRACE`
+
+---
+
+### controlUrl
+
+> The control server url. E.g. `https://headscale.example.com`
+
+**Type**: `String`
+
+**Default**: Current page
+
+---
+
+### tags
+
+> Tags applied to clients (Usually only apply when using a authkey).
+
+**Type**: `String[]`
+
+**Default**: `[]`

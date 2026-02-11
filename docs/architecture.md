@@ -1,11 +1,5 @@
 # Architecture Overview
 
-- [Authentication](#authentication)
-- [SSH](#ssh)
-- [VNC](#vnc)
-- [RDP](#rdp)
-- [Tsnet Microservices](#tsnet-microservices)
-
 > The TCP connection (handled by Golang) is abstracted into a `IpnRawTcpChannel` on JS side.
 > It implements the `RTCDataChannel` interface to allow use with NoVNC & IronRDP but has **nothing to do with WebRTC**.
 
@@ -101,29 +95,4 @@ sequenceDiagram
     rust -->> js: TCP data
     js -->> go: TCP data
     go -->> derp: WebSocket
-```
-
-## Tsnet Microservices
-
-> Used for selfservice & policyservice API
-
-Reaches out via the derp relay. Traffic is not encrypted with TLS (already protected by the underlying WireGuard tunnel).
-
-```mermaid
-sequenceDiagram
-    Participant js as JavaScript
-    Participant go as Go WASM
-    Participant derp as DERP
-    Participant selfservice as Self-Service
-    Participant headscale as Headscale
-
-    js ->> go: HTTP request
-    go ->> derp: WebSocket
-    derp ->> selfservice: WebSocket
-    selfservice ->> headscale : GRPC
-
-    headscale -->> selfservice : GRPC
-    selfservice -->> derp: WebSocket
-    derp -->> go: WebSocket
-    go -->> js: HTTP response
 ```

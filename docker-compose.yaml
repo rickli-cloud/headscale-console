@@ -3,26 +3,19 @@ name: headscale
 
 networks:
   proxy:
-    name: proxy
+    name: proxy # Correlates with traefik's --providers.docker.network option
     driver: bridge
 
 volumes:
   letsencrypt:
     name: traefik-letsencrypt
-  selfservice-data:
-    name: selfservice-data
-  policyservice-data:
-    name: policyservice-data
   headscale-data:
     name: headscale-data
-  headscale-socket:
-    name: headscale-socket
 
 services:
   traefik:
     image: traefik:${TRAEFIK_VERSION:-latest}
     container_name: traefik
-    pull_policy: always
     restart: always
     command:
       - --ping=true
@@ -49,12 +42,10 @@ services:
   headscale:
     image: headscale/headscale:${HEADSCALE_VERSION:?required}
     container_name: headscale
-    pull_policy: always
     restart: always
     command: serve
     volumes:
       - ./config.yaml:/etc/headscale/config.yaml:ro
-      - headscale-socket:/var/run/headscale:rw
       - headscale-data:/var/lib/headscale:rw
     expose:
       - 8080 #  Main server
@@ -77,11 +68,8 @@ services:
   headscale-console:
     image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-latest}
     container_name: headscale-console
-    pull_policy: always
     restart: always
     command: serve
-    volumes:
-      - ./config.json:/config.json:ro
     expose:
       - 3000
     networks:
@@ -92,29 +80,3 @@ services:
       traefik.http.routers.headscale-console.entrypoints: https
       traefik.http.routers.headscale-console.tls.certresolver: letsencrypt
       traefik.http.services.headscale-console.loadbalancer.server.port: 3000
-
-  headscale-selfservice:
-    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-latest}
-    container_name: headscale-selfservice
-    pull_policy: always
-    restart: always
-    command: selfservice --control-url https://${HEADSCALE_SERVER_HOSTNAME:?required}
-    volumes:
-      - headscale-socket:/var/run/headscale:ro
-      - selfservice-data:/data:rw
-    depends_on:
-      headscale:
-        condition: service_started
-
-  headscale-policyservice:
-    image: ghcr.io/rickli-cloud/headscale-console:${HEADSCALE_CONSOLE_VERSION:-latest}
-    container_name: headscale-policyservice
-    pull_policy: always
-    restart: always
-    command: policyservice --control-url https://${HEADSCALE_SERVER_HOSTNAME:?required}
-    volumes:
-      - headscale-socket:/var/run/headscale:ro
-      - policyservice-data:/data:rw
-    depends_on:
-      headscale:
-        condition: service_started
