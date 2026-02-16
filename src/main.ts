@@ -1,11 +1,12 @@
 import { ModeWatcher } from "mode-watcher";
 import { mount, unmount } from "svelte";
 
+import { createClient, IpnEventHandler } from "$package/tailscale";
+
 import { Toaster } from "$lib/components/ui/sonner";
 
 import { CriticalError } from "$lib/components/error";
 
-import { createClient, IpnEventHandler } from "$lib/api/tsconnect";
 import { ipnStatePrefix, loadIpnProfiles, netMap } from "$lib/store/ipn";
 import { loadUserSettings } from "$lib/store/settings";
 import { registerServiceWorker } from "$lib/utils/sw";
@@ -159,7 +160,7 @@ declare global {
           });
           break;
       }
-    }
+    },
   );
 
   window.ipnEventHandler.addEventListener(
@@ -172,14 +173,14 @@ declare global {
         console.error(err);
         toast.error(`Failed to parse NetMap: ${err?.toString()}`);
       }
-    }
+    },
   );
 
   window.ipnEventHandler.addEventListener(
     window.ipnEventHandler.Events.panicRecover,
     (ev) => {
       toast.error("Panic Recover: " + ev.detail.err);
-    }
+    },
   );
 
   window.ipn.run(window.ipnEventHandler);

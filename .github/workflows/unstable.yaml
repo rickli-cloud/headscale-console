@@ -26,19 +26,19 @@ jobs:
           sudo apt install -y binaryen
 
       - name: Build Golang WASM
-        run: GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-unstable-${{ github.sha }} -s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
+        run: GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-unstable-${{ github.sha }} -s -w" -o ./package/tailscale/pkg/tailscale.wasm ./package/tailscale/tailscale.go
 
       - name: Optimize Golang WASM
-        run: wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
+        run: wasm-opt --enable-bulk-memory -Oz ./package/tailscale/pkg/tailscale.wasm -o ./package/tailscale/pkg/tailscale.wasm
 
       - name: Copy Golang WASM exec.js
-        run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
+        run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./package/tailscale/pkg/wasm_exec.js
 
       - name: Upload golang package
         uses: actions/upload-artifact@v6
         with:
           name: golang-wasm-pkg
-          path: src/lib/api/tsconnect/pkg/
+          path: package/tailscale/pkg/
 
   build-rust:
     runs-on: ubuntu-latest
@@ -58,14 +58,14 @@ jobs:
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Build Rust WASM
-        working-directory: wasm
+        working-directory: package/ironRdp
         run: wasm-pack build --out-name ironrdp --target web
 
       - name: Upload rust wasm package
         uses: actions/upload-artifact@v6
         with:
           name: rust-wasm-pkg
-          path: wasm/pkg/
+          path: package/ironRdp/pkg/
 
   build:
     needs:
@@ -83,13 +83,13 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: golang-wasm-pkg
-          path: src/lib/api/tsconnect/pkg/
+          path: package/tailscale/pkg/
 
       - name: Download rust wasm package
         uses: actions/download-artifact@v7
         with:
           name: rust-wasm-pkg
-          path: wasm/pkg/
+          path: package/ironRdp/pkg/
 
       - name: Setup deno
         uses: denoland/setup-deno@v2

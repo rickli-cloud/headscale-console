@@ -5,12 +5,13 @@
   import TriangleAlert from "lucide-svelte/icons/triangle-alert";
   import ArrowLeft from "lucide-svelte/icons/arrow-left";
 
+  import { IpnRawTcpChannel } from "$package/tailscale";
+
   import * as Alert from "$lib/components/ui/alert";
   import { Button } from "$lib/components/ui/button";
   import { Label } from "$lib/components/ui/label";
   import { Input } from "$lib/components/ui/input";
 
-  import { IpnRawTcpChannel } from "$lib/api/tsconnect";
   import SelectNode from "../data/node/SelectNode.svelte";
 
   interface Props {

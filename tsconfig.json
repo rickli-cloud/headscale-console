@@ -9,8 +9,8 @@
     "paths": {
       "$lib": ["./src/lib"],
       "$lib/*": ["./src/lib/*"],
-      "$pkg": ["./wasm/pkg"],
-      "$pkg/*": ["./wasm/pkg/*"],
+      "$package": ["./package"],
+      "$package/*": ["./package/*"],
       "$routes": ["./src/routes"],
       "$routes/*": ["./src/routes/*"]
     }
