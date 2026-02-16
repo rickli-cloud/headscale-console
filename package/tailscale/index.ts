@@ -1,6 +1,6 @@
 import { IpnStateStorage } from "$lib/store/ipn";
 
-import wasmUrl from "./pkg/client.wasm?url";
+import wasmUrl from "./pkg/tailscale.wasm?url";
 import "./pkg/wasm_exec";
 
 import "./tsconnect.d";
@@ -24,12 +24,12 @@ export async function createClient(opt: IPNPackageConfig) {
 
   const wasmInstance = await WebAssembly.instantiateStreaming(
     fetch(wasmUrl),
-    go.importObject
+    go.importObject,
   );
 
   // The Go process should never exit, if it does then it's an unhandled panic.
   go.run(wasmInstance.instance).then(() =>
-    opt.panicHandler("Unexpected shutdown")
+    opt.panicHandler("Unexpected shutdown"),
   );
 
   return newIPN({
@@ -67,11 +67,11 @@ export class IpnEventHandler extends EventTarget implements IPNCallbacks {
 
   public addEventListener<
     EventType extends keyof IpnEventMap,
-    EventPayload extends Event = IpnEventMap[EventType]
+    EventPayload extends Event = IpnEventMap[EventType],
   >(
     type: EventType,
     callback: (ev: EventPayload) => void,
-    options?: AddEventListenerOptions | boolean
+    options?: AddEventListenerOptions | boolean,
   ): void {
     return super.addEventListener(type, callback as EventListener, options);
   }
@@ -129,7 +129,7 @@ class NotifyPanicRecoverEvent extends Event {
 
 export class IpnRawTcpChannel extends EventTarget implements RTCDataChannel {
   public static async connect(
-    opt: Omit<Parameters<typeof window.ipn.tcp>[0], "readCallback">
+    opt: Omit<Parameters<typeof window.ipn.tcp>[0], "readCallback">,
   ): Promise<IpnRawTcpChannel> {
     const wrapper = new IpnRawTcpChannel(
       await window.ipn.tcp({
@@ -139,7 +139,7 @@ export class IpnRawTcpChannel extends EventTarget implements RTCDataChannel {
           // console.debug("IpnRawTcpChannel readCallback:", wrapper.onmessage, data, stringifyBuffer(data));
           wrapper.onmessage?.({ data });
         },
-      })
+      }),
     );
 
     return wrapper;

@@ -14,7 +14,7 @@ import {
   SessionTerminationInfo,
   ClipboardTransaction,
   ClipboardContent,
-} from "$pkg/ironrdp";
+} from "$package/ironRdp/pkg";
 
 import { Extension } from "./interfaces/Extension";
 

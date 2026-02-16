@@ -1,6 +1,7 @@
 import { get, writable } from "svelte/store";
 
-import type { Ipn } from "$lib/types/ipn.d";
+import type { Ipn } from "$package/tailscale/ipn.d";
+
 import { Hex } from "$lib/utils/misc";
 
 export const ipnStatePrefix = "ipn-state-";

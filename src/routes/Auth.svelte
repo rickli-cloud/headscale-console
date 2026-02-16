@@ -4,13 +4,14 @@
   import ExternalLink from "lucide-svelte/icons/external-link";
   import Plus from "lucide-svelte/icons/plus";
 
+  import { type Ipn } from "$package/tailscale/ipn";
+
   import Button from "$lib/components/ui/button/button.svelte";
 
   import Spinner from "$lib/components/utils/Spinner.svelte";
   import { QrCode } from "$lib/components/qrcode";
 
   import { IpnStateStorage } from "$lib/store/ipn";
-  import { type Ipn } from "$lib/types/ipn";
   import { Hex } from "$lib/utils/misc";
 
   const {} = $props();
@@ -27,7 +28,8 @@
   );
 
   onMount(() => {
-    profiles = JSON.parse(Hex.decode(IpnStateStorage.getState("_profiles")));
+    const rawProfiles = Hex.decode(IpnStateStorage.getState("_profiles"));
+    profiles = rawProfiles.length ? JSON.parse(rawProfiles) : undefined;
   });
 </script>
 

@@ -15,7 +15,7 @@ const {
 } = process.env;
 
 const pkg: typeof import("./package.json") = JSON.parse(
-  new TextDecoder().decode(readFileSync(resolve(__dirname, "package.json")))
+  new TextDecoder().decode(readFileSync(resolve(__dirname, "package.json"))),
 );
 
 // Virtual modules to provide configuration
@@ -65,7 +65,7 @@ export default defineConfig(({}) => {
     resolve: {
       alias: {
         $lib: resolve(__dirname, "src/lib"),
-        $pkg: resolve(__dirname, "wasm/pkg"),
+        $package: resolve(__dirname, "package"),
         $routes: resolve(__dirname, "src/routes"),
       },
     },

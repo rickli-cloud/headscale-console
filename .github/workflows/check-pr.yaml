@@ -46,23 +46,20 @@ jobs:
           sudo apt update
           sudo apt install -y binaryen
 
-      - name: Run Golang check
-        run: go vet ./wasm/wasm.go
-
       - name: Build Golang WASM
-        run: go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-test-${{ github.sha }} -s -w" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go
+        run: go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-check-${{ github.sha }} -s -w" -o ./package/tailscale/pkg/tailscale.wasm ./package/tailscale/tailscale.go
 
       - name: Optimize Golang WASM
-        run: wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm
+        run: wasm-opt --enable-bulk-memory -Oz ./package/tailscale/pkg/tailscale.wasm -o ./package/tailscale/pkg/tailscale.wasm
 
       - name: Copy WASM exec.js
-        run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./src/lib/api/tsconnect/pkg/wasm_exec.js
+        run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./package/tailscale/pkg/wasm_exec.js
 
       - name: Upload golang package
         uses: actions/upload-artifact@v6
         with:
           name: golang-wasm-pkg
-          path: src/lib/api/tsconnect/pkg/
+          path: package/tailscale/pkg/
 
   rust-wasm:
     runs-on: ubuntu-latest
@@ -82,14 +79,14 @@ jobs:
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
       - name: Build Rust WASM
-        working-directory: wasm
+        working-directory: package/ironRdp
         run: wasm-pack build --out-name ironrdp --target web
 
       - name: Upload rust wasm package
         uses: actions/upload-artifact@v6
         with:
           name: rust-wasm-pkg
-          path: wasm/pkg/
+          path: package/ironRdp/pkg/
 
   typescript:
     needs:
@@ -107,13 +104,13 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: golang-wasm-pkg
-          path: src/lib/api/tsconnect/pkg/
+          path: package/tailscale/pkg/
 
       - name: Download rust wasm package
         uses: actions/download-artifact@v7
         with:
           name: rust-wasm-pkg
-          path: wasm/pkg/
+          path: package/ironRdp/pkg/
 
       - name: Setup Deno
         uses: denoland/setup-deno@v2
@@ -123,13 +120,29 @@ jobs:
       - name: Install dependencies
         run: deno install
 
-      # Basic syntax & types check
+      - name: Patch version
+        run: deno --allow-read="package.json" --allow-write="package.json" patch-version.js 0.0.0-check-${{ github.sha }}
+
       - name: Run checks
         run: deno task check
 
       # TODO: proper tests
+
       # - name: Run unit tests
       #   run: deno task test:unit
 
       # - name: Run e2e tests
       #   run: deno task test:e2e
+
+      - name: Build frontend
+        run: deno task build
+
+      - name: Removing unnecessary files
+        run: |
+          rm dist/frontend.go
+
+      - name: Upload app package
+        uses: actions/upload-artifact@v6
+        with:
+          name: app-pkg
+          path: dist/
