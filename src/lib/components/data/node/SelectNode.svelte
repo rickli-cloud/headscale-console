@@ -8,13 +8,17 @@
     hostname: string;
     filter?: () => boolean;
     required?: boolean;
+    open?: boolean;
   }
 
   let {
     hostname = $bindable(""),
     filter = () => true,
     required = true,
+    open = $bindable(false),
   }: Props = $props();
+
+  let customAnchor = $state<HTMLElement>(null!);
 
   let peers = $derived(
     ($netMap?.peers || [])
@@ -23,24 +27,30 @@
         (i) =>
           !hostname.length ||
           new RegExp(hostname).test(i.name.split(".")[0]) ||
-          i.addresses.find((i) => new RegExp(hostname).test(i))?.length
+          i.addresses.find((i) => new RegExp(hostname).test(i))?.length,
       )
-      .filter(filter)
+      .filter(filter),
   );
 </script>
 
-<DropdownMenu.Root>
+<DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger>
     {#snippet child({ props: { type: _, ...props } })}
-      <Input {...props} {required} bind:value={hostname} />
+      <Input
+        {...props}
+        {required}
+        bind:ref={customAnchor}
+        bind:value={hostname}
+      />
     {/snippet}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content
+    {customAnchor}
     onOpenAutoFocus={(e) => e.preventDefault()}
     onCloseAutoFocus={(e) => e.preventDefault()}
     align="start"
-    class="min-w-[262px]"
+    class="min-w-65.5"
   >
     {#if peers.length}
       <DropdownMenu.Group>

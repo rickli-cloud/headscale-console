@@ -1,7 +1,7 @@
 import { IpnStateStorage } from "$lib/store/ipn";
 
-import wasmUrl from "./pkg/tailscale.wasm?url";
-import "./pkg/wasm_exec";
+import wasmUrl from "./pkg/client.wasm?url";
+import "./pkg/wasm_exec.js";
 
 import "./tsconnect.d";
 
@@ -39,11 +39,11 @@ export async function createClient(opt: IPNPackageConfig) {
 }
 
 export class IpnEventHandler extends EventTarget implements IPNCallbacks {
-  Events = IpnEvents;
-  NotifyBrowseToURLEvent = NotifyBrowseToURLEvent;
-  NotifyNetMapEvent = NotifyNetMapEvent;
-  NotifyStateEvent = NotifyStateEvent;
-  NotifyPanicRecoverEvent = NotifyPanicRecoverEvent;
+  public readonly Events = IpnEvents;
+  public readonly NotifyBrowseToURLEvent = NotifyBrowseToURLEvent;
+  public readonly NotifyNetMapEvent = NotifyNetMapEvent;
+  public readonly NotifyStateEvent = NotifyStateEvent;
+  public readonly NotifyPanicRecoverEvent = NotifyPanicRecoverEvent;
 
   public constructor() {
     super();
@@ -93,7 +93,6 @@ interface IpnEventMap {
 
 class NotifyBrowseToURLEvent extends Event {
   public readonly detail: { url: string };
-
   constructor(url: string) {
     super(IpnEvents.browseToURL);
     this.detail = { url };
@@ -102,7 +101,6 @@ class NotifyBrowseToURLEvent extends Event {
 
 class NotifyNetMapEvent extends Event {
   public readonly detail: { netMapStr: string };
-
   constructor(netMapStr: string) {
     super(IpnEvents.netMap);
     this.detail = { netMapStr };
@@ -111,7 +109,6 @@ class NotifyNetMapEvent extends Event {
 
 class NotifyStateEvent extends Event {
   public readonly detail: { state: IPNState };
-
   constructor(state: IPNState) {
     super(IpnEvents.state);
     this.detail = { state };
@@ -120,7 +117,6 @@ class NotifyStateEvent extends Event {
 
 class NotifyPanicRecoverEvent extends Event {
   public readonly detail: { err: string };
-
   constructor(err: string) {
     super(IpnEvents.panicRecover);
     this.detail = { err };
@@ -191,6 +187,16 @@ export class IpnRawTcpChannel extends EventTarget implements RTCDataChannel {
   public close(): void {
     this.tcp.close();
   }
+}
+
+declare class Go {
+  argv: string[];
+  env: { [envKey: string]: string };
+  exit: (code: number) => void;
+  importObject: WebAssembly.Imports;
+  exited: boolean;
+  mem: DataView;
+  run(instance: WebAssembly.Instance): Promise<void>;
 }
 
 /* function stringifyBuffer(data: Uint8Array) {

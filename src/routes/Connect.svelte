@@ -24,7 +24,7 @@
   });
 </script>
 
-<main class="h-screen w-screen overflow-hidden">
+<main class="h-svh w-svw overflow-hidden relative">
   {#if proto === "ssh"}
     <Xterm hostname={hostname!} />
   {:else if proto === "vnc"}
