@@ -151,7 +151,7 @@ jobs:
           gh release upload ${{ github.event.release.tag_name }} headscale-console-${{ github.event.release.tag_name }}.zip
 
       - name: Build versioned docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
@@ -160,7 +160,7 @@ jobs:
           build-args: HEADSCALE_CONSOLE_VERSION=${{ github.event.release.tag_name }}
 
       - name: Build latest docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         if: "!github.event.release.prerelease"
         with:
           context: .
