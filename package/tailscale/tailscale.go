@@ -100,9 +100,12 @@ func newIPN(jsConfig js.Value) map[string]any {
 
 	var advertiseTags []string
 	if jsAdvertiseTags := jsConfig.Get("advertiseTags"); jsAdvertiseTags.Type() == js.TypeString {
-		advertiseTags = strings.Split(jsAdvertiseTags.String(), ";")
+		tags := jsAdvertiseTags.String()
+		if len(tags) > 0 {
+			advertiseTags = strings.Split(tags, ";")
+		}
 	}
-	log.Printf("AdvertiseTags: %v", advertiseTags)
+	log.Printf("AdvertiseTags: %v len: %v", advertiseTags, len(advertiseTags))
 
 	lpc := getOrCreateLogPolicyConfig(store)
 	// c := logtail.Config{
