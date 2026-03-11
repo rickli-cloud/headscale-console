@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"os"
 	"time"
@@ -21,7 +22,7 @@ func init() {
 	serveCmd.Flags().StringP("listen", "l", ":3000", "Server listen address")
 	viper.BindPFlag("serve.listen", serveCmd.Flags().Lookup("listen"))
 
-	serveCmd.Flags().String("configfile", "config.json", "Path to optional config file")
+	serveCmd.Flags().String("configfile", "", "Path to optional config file. Required if provided, otherwise will check config.json if it exists.")
 	viper.BindPFlag("serve.configfile", serveCmd.Flags().Lookup("configfile"))
 
 	rootCmd.AddCommand(serveCmd)
@@ -38,11 +39,28 @@ var serveCmd = &cobra.Command{
 
 		var config []byte
 
-		if _, err := os.Stat(configfile); !os.IsNotExist(err) {
-			config, err = os.ReadFile(configfile)
-			if err != nil {
+		allowConfigNotExists := configfile == ""
+		if configfile == "" {
+			configfile = "config.json"
+			log.Info().Msg("Checking for config in default config.json location")
+		}
+
+		config, err := os.ReadFile(configfile)
+		if err != nil {
+			if os.IsNotExist(err) && allowConfigNotExists {
+				log.Info().Msg("Ignoring missing config file from default path")
+			} else {
 				log.Fatal().Err(err).Msg("Failed to read configfile")
 			}
+		} else {
+			if err := json.Unmarshal(config, &map[string]any{}); err != nil {
+				log.Fatal().
+					Str("configfile", configfile).
+					Err(err).
+					Msg("Failed to parse configfile")
+			}
+
+			log.Info().Str("configfile", configfile).Msg("Loaded config")
 		}
 
 		router := http.NewServeMux()
@@ -54,7 +72,7 @@ var serveCmd = &cobra.Command{
 		subrouter.Handle("/", http.HandlerFunc(fileServer.ServeHTTP))
 
 		if config != nil {
-			subrouter.HandleFunc("/config", func(w http.ResponseWriter, r *http.Request) {
+			subrouter.HandleFunc("/config.json", func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Type", "application/json")
 				_, err := w.Write(config)
 				if err != nil {
