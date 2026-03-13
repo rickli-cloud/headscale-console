@@ -41,7 +41,7 @@
     "vaul-svelte": "^1.0.0-next.7",
     "vite": "^6.2.0",
     "vite-plugin-pwa": "^1.0.3",
-    "@novnc/novnc": "1.5.0",
+    "@novnc/novnc": "1.6.0",
     "@types/qrcode-svg": "^1.1.5",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
