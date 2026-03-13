@@ -22,7 +22,7 @@ panic_hook = ["dep:console_error_panic_hook"]
 
 [dependencies]
 # Protocols
-ironrdp = { version = "0.9.1", features = [
+ironrdp = { version = "0.14.0", features = [
     "connector",
     "session",
     "input",
