@@ -28,7 +28,7 @@
     "formsnap": "^2.0.1",
     "lucide-svelte": "^0.476.0",
     "mode-watcher": "^0.5.1",
-    "monaco-editor": "^0.54.0",
+    "monaco-editor": "^0.55.0",
     "paneforge": "^1.0.0-next.6",
     "shadcn-svelte": "^1.0.0-next.4",
     "svelte": "^5.20.2",
