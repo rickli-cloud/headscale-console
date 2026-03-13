@@ -1362,9 +1362,9 @@ dependencies = [
 
 [[package]]
 name = "ironrdp-core"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56c0fd3307a9cc576741cbcc1fdf4d94289ab127cb69692228cfb921829f0eb2"
+checksum = "b2db60a59716a84d09040d29c9e75e81545842510fccb0934c09b28e78b46680"
 dependencies = [
  "ironrdp-error",
 ]
