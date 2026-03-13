@@ -1045,7 +1045,7 @@ dependencies = [
  "ironrdp-core",
  "ironrdp-futures",
  "js-sys",
- "png",
+ "png 0.17.16",
  "resize",
  "rgb",
  "ring",
@@ -1332,13 +1332,12 @@ dependencies = [
 
 [[package]]
 name = "ironrdp-cliprdr-format"
-version = "0.1.3"
+version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0da043dcac845ec70259514d79fb5830da993de7cd51e1adf8e09668f56888a7"
+checksum = "a0dab442bd73a909c054113bc454762fa926f3814733a2b4af6900e5903944b7"
 dependencies = [
  "ironrdp-core",
- "png",
- "thiserror",
+ "png 0.18.1",
 ]
 
 [[package]]
@@ -2050,6 +2049,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "82151a2fc869e011c153adc57cf2789ccb8d9906ce52c0b39a6b5697749d7526"
 dependencies = [
  "bitflags 1.3.2",
+ "crc32fast",
+ "fdeflate",
+ "flate2",
+ "miniz_oxide",
+]
+
+[[package]]
+name = "png"
+version = "0.18.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60769b8b31b2a9f263dae2776c37b1b28ae246943cf719eb6946a1db05128a61"
+dependencies = [
+ "bitflags 2.9.0",
  "crc32fast",
  "fdeflate",
  "flate2",
