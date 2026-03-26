@@ -14,7 +14,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Setup Golang
         uses: actions/setup-go@v5
@@ -34,7 +34,7 @@ jobs:
       GOARCH: wasm
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Setup Golang
         uses: actions/setup-go@v5
@@ -68,7 +68,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Setup rust
         run: |
@@ -98,7 +98,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: Download golang wasm package
         uses: actions/download-artifact@v7
