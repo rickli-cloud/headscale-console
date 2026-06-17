@@ -6,7 +6,7 @@ toolchain go1.24.2
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/rs/zerolog v1.34.0
+	github.com/rs/zerolog v1.35.1
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.16.0
 	golang.org/x/crypto v0.37.0
