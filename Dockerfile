@@ -10,7 +10,7 @@ COPY go.* ./
 
 COPY dist/ dist/
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-${HEADSCALE_CONSOLE_VERSION}" main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -trimpath -ldflags "-s -w -X tailscale.com/version.shortStamp=1.102.4 -X tailscale.com/version.longStamp=1.102.4-HeadscaleConsole-${HEADSCALE_CONSOLE_VERSION}" main.go
 
 FROM scratch
 

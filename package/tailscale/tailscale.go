@@ -1,4 +1,4 @@
-// Copyright (c) Tailscale Inc & AUTHORS
+// Copyright (c) Tailscale Inc & contributors
 // SPDX-License-Identifier: BSD-3-Clause
 
 // Complete TCP implementation & "routeAll" options by:
@@ -35,6 +35,7 @@ import (
 	"tailscale.com/client/local"
 	"tailscale.com/control/controlclient"
 	"tailscale.com/ipn"
+	"tailscale.com/ipn/ipnauth"
 	"tailscale.com/ipn/ipnlocal"
 	"tailscale.com/ipn/ipnserver"
 	"tailscale.com/ipn/store/mem"
@@ -44,6 +45,7 @@ import (
 	"tailscale.com/safesocket"
 	"tailscale.com/tailcfg"
 	"tailscale.com/tsd"
+	"tailscale.com/types/netmap"
 	"tailscale.com/types/views"
 	"tailscale.com/wgengine"
 	"tailscale.com/wgengine/netstack"
@@ -119,15 +121,18 @@ func newIPN(jsConfig js.Value) map[string]any {
 	// logtail := logtail.NewLogger(c, log.Printf)
 	// logf := logtail.Logf
 
-	sys := new(tsd.System)
+	sys := tsd.NewSystem()
 	sys.Set(store)
 	dialer := &tsdial.Dialer{Logf: log.Printf}
+	dialer.SetBus(sys.Bus.Get())
 	eng, err := wgengine.NewUserspaceEngine(log.Printf, wgengine.Config{
 		Dialer:        dialer,
 		SetSubsystem:  sys.Set,
 		ControlKnobs:  sys.ControlKnobs(),
-		HealthTracker: sys.HealthTracker(),
+		HealthTracker: sys.HealthTracker.Get(),
+		ExtraRootCAs:  sys.ExtraRootCAs,
 		Metrics:       sys.UserMetricsRegistry(),
+		EventBus:      sys.Bus.Get(),
 	})
 	if err != nil {
 		log.Fatal(err)
@@ -146,16 +151,30 @@ func newIPN(jsConfig js.Value) map[string]any {
 		return true
 	}
 	dialer.NetstackDialTCP = func(ctx context.Context, dst netip.AddrPort) (net.Conn, error) {
-		return ns.DialContextTCP(ctx, dst)
+		// Note: don't just return ns.DialContextTCP or we'll return
+		// *gonet.TCPConn(nil) instead of a nil interface which trips up
+		// callers.
+		tcpConn, err := ns.DialContextTCP(ctx, dst)
+		if err != nil {
+			return nil, err
+		}
+		return tcpConn, nil
 	}
 	dialer.NetstackDialUDP = func(ctx context.Context, dst netip.AddrPort) (net.Conn, error) {
-		return ns.DialContextUDP(ctx, dst)
+		// Note: don't just return ns.DialContextUDP or we'll return
+		// *gonet.UDPConn(nil) instead of a nil interface which trips up
+		// callers.
+		udpConn, err := ns.DialContextUDP(ctx, dst)
+		if err != nil {
+			return nil, err
+		}
+		return udpConn, nil
 	}
 	sys.NetstackRouter.Set(true)
 	sys.Tun.Get().Start()
 
 	logid := lpc.PublicID
-	srv := ipnserver.New(log.Printf, logid, sys.NetMon.Get())
+	srv := ipnserver.New(log.Printf, logid, sys.Bus.Get(), sys.NetMon.Get())
 	lb, err := ipnlocal.NewLocalBackend(log.Printf, logid, sys, controlclient.LoginDefault)
 	if err != nil {
 		log.Fatalf("ipnlocal.NewLocalBackend: %v", err)
@@ -293,7 +312,13 @@ func (i *jsIPN) run(jsCallbacks js.Value) {
 	}
 	notifyState(ipn.NoState)
 
-	i.lb.SetNotifyCallback(func(n ipn.Notify) {
+	// Subscribe with peer-change bits: since tailscale v1.9x peer updates
+	// (added/removed peers, online/lastSeen patches) are only delivered on
+	// the IPN bus to watchers that explicitly opt in.
+	const notifyMask = ipn.NotifyInitialState | ipn.NotifyInitialNetMap | ipn.NotifyPeerPatches
+	watchAdded := make(chan struct{})
+	go i.lb.WatchNotifications(context.Background(), notifyMask, func() { close(watchAdded) }, func(np *ipn.Notify) bool {
+		n := *np
 		// Panics in the notify callback are likely due to be due to bugs in
 		// this bridging module (as opposed to actual bugs in Tailscale) and
 		// thus may be recoverable. Let the UI know, and allow the user to
@@ -308,66 +333,25 @@ func (i *jsIPN) run(jsCallbacks js.Value) {
 		if n.State != nil {
 			notifyState(*n.State)
 		}
-		if nm := n.NetMap; nm != nil {
-			jsNetMap := jsNetMap{
-				Self: jsNetMapSelfNode{
-					jsNetMapNode: jsNetMapNode{
-						Name:       nm.Name,
-						Addresses:  mapSliceView(nm.GetAddresses(), func(a netip.Prefix) string { return a.Addr().String() }),
-						NodeKey:    nm.NodeKey.String(),
-						MachineKey: nm.MachineKey.String(),
-						CreatedAt:  nm.SelfNode.Created().String(),
-						IPNVersion: nm.SelfNode.Hostinfo().IPNVersion(),
-					},
-					Tags:          nm.SelfNode.Tags(),
-					MachineStatus: jsMachineStatus[nm.GetMachineStatus()],
-				},
-				Users: nm.UserProfiles,
-				Peers: mapSlice(nm.Peers, func(p tailcfg.NodeView) jsNetMapPeerNode {
-					name := p.Name()
-					if name == "" {
-						// In practice this should only happen for Hello.
-						name = p.Hostinfo().Hostname()
-					}
-					addrs := make([]string, p.Addresses().Len())
-					for i, ap := range p.Addresses().All() {
-						addrs[i] = ap.Addr().String()
-					}
-					return jsNetMapPeerNode{
-						jsNetMapNode: jsNetMapNode{
-							Name:       name,
-							Addresses:  addrs,
-							MachineKey: p.Machine().String(),
-							NodeKey:    p.Key().String(),
-							CreatedAt:  p.Created().String(),
-							IPNVersion: p.Hostinfo().IPNVersion(),
-						},
-						LastSeen:            p.LastSeen().String(),
-						OS:                  p.Hostinfo().OS(),
-						OSVersion:           p.Hostinfo().OSVersion(),
-						User:                p.User().String(),
-						Tags:                p.Tags(),
-						Routes:              p.Hostinfo().RoutableIPs(),
-						Online:              *p.Online().Clone(),
-						Expired:             p.Expired(),
-						TailscaleSSHEnabled: p.Hostinfo().TailscaleSSHEnabled(),
-						ID:                  strconv.FormatInt(int64(p.ID()), 10),
-						CapMap:              p.CapMap().AsMap(),
-					}
-				}),
-				LockedOut: nm.TKAEnabled && nm.SelfNode.KeySignature().Len() == 0,
-				Domain:    nm.MagicDNSSuffix(),
-			}
-			if jsonNetMap, err := json.Marshal(jsNetMap); err == nil {
-				jsCallbacks.Call("notifyNetMap", string(jsonNetMap))
-			} else {
-				log.Printf("Could not generate JSON netmap: %v", err)
+		// Since tailscale v1.9x the full NetMap is no longer pushed on the IPN
+		// bus. Rebuild the JS-side snapshot whenever self or the peer set
+		// changes, fetching the current netmap (incl. peers) on demand.
+		if n.NetMap != nil || n.SelfChange != nil || len(n.PeersChanged) > 0 ||
+			len(n.PeersRemoved) > 0 || len(n.PeerChangedPatch) > 0 || len(n.UserProfiles) > 0 {
+			if nm := i.lb.NetMapWithPeers(); nm != nil {
+				if jsonNetMap, err := json.Marshal(newJSNetMap(nm)); err == nil {
+					jsCallbacks.Call("notifyNetMap", string(jsonNetMap))
+				} else {
+					log.Printf("Could not generate JSON netmap: %v", err)
+				}
 			}
 		}
 		if n.BrowseToURL != nil {
 			jsCallbacks.Call("notifyBrowseToURL", *n.BrowseToURL)
 		}
+		return true
 	})
+	<-watchAdded
 
 	go func() {
 		err := i.lb.Start(ipn.Options{
@@ -408,7 +392,7 @@ func (i *jsIPN) logout() {
 	go func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		i.lb.Logout(ctx)
+		i.lb.Logout(ctx, ipnauth.Self)
 	}()
 }
 
@@ -736,7 +720,6 @@ func (s *jsSSHSession) Run() {
 		cols = s.pendingResizeCols
 	}
 	err = session.RequestPty("xterm", rows, cols, ssh.TerminalModes{})
-
 	if err != nil {
 		writeError("Pseudo Terminal", err)
 		return
@@ -867,6 +850,68 @@ func (i *jsIPN) resolve(hostname js.Value) js.Value {
 			"resolvers": resolvers,
 		}, nil
 	})
+}
+
+// formatTime renders an optional timestamp as RFC 3339, or "" if unset.
+func formatTime(t views.ValuePointer[time.Time]) string {
+	if v, ok := t.GetOk(); ok && !v.IsZero() {
+		return v.Format(time.RFC3339)
+	}
+	return ""
+}
+
+// newJSNetMap converts a netmap into the JSON shape consumed by the web UI.
+func newJSNetMap(nm *netmap.NetworkMap) jsNetMap {
+	return jsNetMap{
+		Self: jsNetMapSelfNode{
+			jsNetMapNode: jsNetMapNode{
+				Name:       nm.SelfName(),
+				Addresses:  mapSliceView(nm.GetAddresses(), func(a netip.Prefix) string { return a.Addr().String() }),
+				NodeKey:    nm.NodeKey.String(),
+				MachineKey: nm.MachineKey.String(),
+				CreatedAt:  nm.SelfNode.Created().Format(time.RFC3339),
+				IPNVersion: nm.SelfNode.Hostinfo().IPNVersion(),
+			},
+			Tags:          nm.SelfNode.Tags(),
+			MachineStatus: jsMachineStatus[nm.GetMachineStatus()],
+		},
+		Users: nm.UserProfiles,
+		Peers: mapSlice(nm.Peers, func(p tailcfg.NodeView) jsNetMapPeerNode {
+			name := p.Name()
+			if name == "" {
+				// In practice this should only happen for Hello.
+				name = p.Hostinfo().Hostname()
+			}
+			addrs := make([]string, p.Addresses().Len())
+			for i, ap := range p.Addresses().All() {
+				addrs[i] = ap.Addr().String()
+			}
+			online, _ := p.Online().GetOk()
+			return jsNetMapPeerNode{
+				jsNetMapNode: jsNetMapNode{
+					Name:       name,
+					Addresses:  addrs,
+					MachineKey: p.Machine().String(),
+					NodeKey:    p.Key().String(),
+					CreatedAt:  p.Created().Format(time.RFC3339),
+					IPNVersion: p.Hostinfo().IPNVersion(),
+				},
+				LastSeen:            formatTime(p.LastSeen()),
+				OS:                  p.Hostinfo().OS(),
+				OSVersion:           p.Hostinfo().OSVersion(),
+				User:                p.User().String(),
+				Tags:                p.Tags(),
+				Routes:              p.Hostinfo().RoutableIPs(),
+				Online:              online,
+				Expired:             p.Expired(),
+				TailscaleSSHEnabled: p.Hostinfo().TailscaleSSHEnabled(),
+				ID:                  strconv.FormatInt(int64(p.ID()), 10),
+				CapMap:              p.CapMap().AsMap(),
+			}
+		}),
+		LockedOut: nm.TKAEnabled && nm.SelfNode.KeySignature().Len() == 0,
+		Domain:    nm.MagicDNSSuffix(),
+	}
 }
 
 type termWriter struct {
