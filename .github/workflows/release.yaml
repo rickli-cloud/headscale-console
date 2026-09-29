@@ -29,7 +29,7 @@ jobs:
         run: GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-${{ github.event.release.tag_name }} -s -w" -o ./package/tailscale/pkg/tailscale.wasm ./package/tailscale/tailscale.go
 
       - name: Optimize Golang WASM
-        run: wasm-opt --enable-bulk-memory -Oz ./package/tailscale/pkg/tailscale.wasm -o ./package/tailscale/pkg/tailscale.wasm
+        run: wasm-opt --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int -Oz ./package/tailscale/pkg/tailscale.wasm -o ./package/tailscale/pkg/tailscale.wasm
 
       - name: Copy Golang WASM exec.js
         run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./package/tailscale/pkg/wasm_exec.js
