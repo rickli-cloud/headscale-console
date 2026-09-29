@@ -17,8 +17,8 @@ jobs:
 
       - name: Setup Golang
         uses: actions/setup-go@v5
-        # with:
-        #   go-version: ""
+        with:
+          go-version-file: go.mod
 
       - name: Setup binaryen
         run: |
@@ -26,7 +26,7 @@ jobs:
           sudo apt install -y binaryen
 
       - name: Build Golang WASM
-        run: GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.82.5 -X tailscale.com/version.longStamp=1.82.5-HeadscaleConsole-unstable-${{ github.sha }} -s -w" -o ./package/tailscale/pkg/tailscale.wasm ./package/tailscale/tailscale.go
+        run: GOOS=js GOARCH=wasm go build -trimpath -ldflags "-X tailscale.com/version.shortStamp=1.102.4 -X tailscale.com/version.longStamp=1.102.4-HeadscaleConsole-unstable-${{ github.sha }} -s -w" -o ./package/tailscale/pkg/tailscale.wasm ./package/tailscale/tailscale.go
 
       - name: Optimize Golang WASM
         run: wasm-opt --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int -Oz ./package/tailscale/pkg/tailscale.wasm -o ./package/tailscale/pkg/tailscale.wasm

@@ -38,14 +38,24 @@ A full production deployment of traefik, headscale & headscale-console can be fo
 
 1. **Configure headscale** in `config.yaml`
 
-   See [`config-example.yaml`](https://github.com/juanfont/headscale/blob/v0.28.0/config-example.yaml)
+   See [`config-example.yaml`](https://github.com/juanfont/headscale/blob/v0.29.4/config-example.yaml)
+
+   > [!NOTE]
+   > Headscale Console is tested against Headscale **v0.29.4** and requires **v0.29.2 or newer**.
+   > Earlier releases reject the WebSocket upgrade on `/ts2021` which the browser client relies on.
+   >
+   > Headscale enforces a strict upgrade path: upgrade one minor version at a time (e.g. 0.27 → 0.28 → 0.29).
+   > See the [Headscale changelog](https://github.com/juanfont/headscale/blob/v0.29.4/CHANGELOG.md) for breaking changes.
+
+   The browser client connects to the control server via WebSockets on the default HTTPS port (443).
+   Headscale must therefore be reachable on port 443 (e.g. behind a reverse proxy) with a valid TLS certificate.
 
 2. **Configure environment variables** in `.env`:
 
    ```sh
    # Required
    HEADSCALE_SERVER_HOSTNAME=headscale.example.com
-   HEADSCALE_VERSION=0.27.1
+   HEADSCALE_VERSION=0.29.4
 
    # Optional
    HEADSCALE_CONSOLE_VERSION=latest

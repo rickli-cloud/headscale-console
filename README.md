@@ -3,7 +3,7 @@
 [![Unstable release](https://github.com/rickli-cloud/headscale-console/actions/workflows/unstable.yaml/badge.svg)](https://github.com/rickli-cloud/headscale-console/actions/workflows/unstable.yaml)
 
 <!-- TODO: Renovate Group -->
-<!-- ![Client Version](https://img.shields.io/badge/Client-v1.82.5-blue) -->
+<!-- ![Client Version](https://img.shields.io/badge/Client-v1.102.4-blue) -->
 
 ![/docs/media/preview-dark.png](/docs/media/preview.png)
 
