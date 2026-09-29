@@ -24,7 +24,7 @@ GOOS=js GOARCH=wasm go build -trimpath -ldflags "-s -w" -o ./package/tailscale/p
 ### Optimize with binaryen
 
 ```sh
-wasm-opt --enable-bulk-memory -Oz ./package/tailscale/pkg/tailscale.wasm -o ./package/tailscale/pkg/tailscale.wasm
+wasm-opt --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int -Oz ./package/tailscale/pkg/tailscale.wasm -o ./package/tailscale/pkg/tailscale.wasm
 ```
 
 ### Copy required helper functions
