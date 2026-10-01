@@ -56,7 +56,7 @@ jobs:
         run: cp "$(go env GOROOT)/lib/wasm/wasm_exec.js" ./package/tailscale/pkg/wasm_exec.js
 
       - name: Upload golang package
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: golang-wasm-pkg
           path: package/tailscale/pkg/
@@ -83,7 +83,7 @@ jobs:
         run: wasm-pack build --out-name ironrdp --target web
 
       - name: Upload rust wasm package
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: rust-wasm-pkg
           path: package/ironRdp/pkg/
@@ -101,13 +101,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Download golang wasm package
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: golang-wasm-pkg
           path: package/tailscale/pkg/
 
       - name: Download rust wasm package
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: rust-wasm-pkg
           path: package/ironRdp/pkg/
@@ -142,7 +142,7 @@ jobs:
           rm dist/frontend.go
 
       - name: Upload app package
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: app-pkg
           path: dist/
