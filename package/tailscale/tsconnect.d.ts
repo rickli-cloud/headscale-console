@@ -80,6 +80,7 @@ declare global {
     notifyNetMap: (netMapStr: string) => void;
     notifyBrowseToURL: (url: string) => void;
     notifyPanicRecover: (err: string) => void;
+    notifyError: (message: string) => void;
   };
 
   type IPNNetMap = {

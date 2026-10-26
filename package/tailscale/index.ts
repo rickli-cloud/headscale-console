@@ -44,6 +44,7 @@ export class IpnEventHandler extends EventTarget implements IPNCallbacks {
   NotifyNetMapEvent = NotifyNetMapEvent;
   NotifyStateEvent = NotifyStateEvent;
   NotifyPanicRecoverEvent = NotifyPanicRecoverEvent;
+  NotifyErrorEvent = NotifyErrorEvent;
 
   public constructor() {
     super();
@@ -65,6 +66,10 @@ export class IpnEventHandler extends EventTarget implements IPNCallbacks {
     this.dispatchEvent(new NotifyPanicRecoverEvent(err));
   }
 
+  public notifyError(message: string) {
+    this.dispatchEvent(new NotifyErrorEvent(message));
+  }
+
   public addEventListener<
     EventType extends keyof IpnEventMap,
     EventPayload extends Event = IpnEventMap[EventType],
@@ -82,6 +87,7 @@ enum IpnEvents {
   netMap = "NetMap",
   state = "State",
   panicRecover = "PanicRecover",
+  error = "Error",
 }
 
 interface IpnEventMap {
@@ -89,6 +95,7 @@ interface IpnEventMap {
   NetMap: NotifyNetMapEvent;
   State: NotifyStateEvent;
   PanicRecover: NotifyPanicRecoverEvent;
+  Error: NotifyErrorEvent;
 }
 
 class NotifyBrowseToURLEvent extends Event {
@@ -124,6 +131,15 @@ class NotifyPanicRecoverEvent extends Event {
   constructor(err: string) {
     super(IpnEvents.panicRecover);
     this.detail = { err };
+  }
+}
+
+class NotifyErrorEvent extends Event {
+  public readonly detail: { message: string };
+
+  constructor(message: string) {
+    super(IpnEvents.error);
+    this.detail = { message };
   }
 }
 

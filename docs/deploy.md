@@ -38,14 +38,21 @@ A full production deployment of traefik, headscale & headscale-console can be fo
 
 1. **Configure headscale** in `config.yaml`
 
-   See [`config-example.yaml`](https://github.com/juanfont/headscale/blob/v0.29.4/config-example.yaml)
+   See [`config-example.yaml`](https://github.com/juanfont/headscale/blob/v0.29.6/config-example.yaml)
 
    > [!NOTE]
-   > Headscale Console is tested against Headscale **v0.29.4** and requires **v0.29.2 or newer**.
+   > Headscale Console is tested against Headscale **v0.29.6** and requires **v0.29.2 or newer**.
    > Earlier releases reject the WebSocket upgrade on `/ts2021` which the browser client relies on.
    >
+   > The bundled client is Tailscale **v1.102.4** (capability version 142).
+   > Headscale v0.29.6 accepts that client: it allows capability version 113 and newer, which is Tailscale v1.80.0 and newer.
+   > v0.29.6 is a security and reliability patch on top of v0.29.5. Peer removals and policy changes arrive as incremental map updates, which this client already applies.
+   >
+   > Do not grant `https://tailscale.com/cap/data-plane-audit-logs` while `logtail.enabled` is `false`.
+   > Headscale v0.29.5 and newer keep log upload disabled, and a client that has both instructions turns itself off until the attribute is removed.
+   >
    > Headscale enforces a strict upgrade path: upgrade one minor version at a time (e.g. 0.27 → 0.28 → 0.29).
-   > See the [Headscale changelog](https://github.com/juanfont/headscale/blob/v0.29.4/CHANGELOG.md) for breaking changes.
+   > See the [Headscale changelog](https://github.com/juanfont/headscale/blob/v0.29.6/CHANGELOG.md) for breaking changes.
 
    The browser client connects to the control server via WebSockets on the default HTTPS port (443).
    Headscale must therefore be reachable on port 443 (e.g. behind a reverse proxy) with a valid TLS certificate.
@@ -55,7 +62,7 @@ A full production deployment of traefik, headscale & headscale-console can be fo
    ```sh
    # Required
    HEADSCALE_SERVER_HOSTNAME=headscale.example.com
-   HEADSCALE_VERSION=0.29.4
+   HEADSCALE_VERSION=0.29.6
 
    # Optional
    HEADSCALE_CONSOLE_VERSION=latest

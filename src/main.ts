@@ -41,6 +41,7 @@ declare global {
   }
 
   let stopped: boolean = false;
+  let sessionError: string | undefined;
 
   let loadingScreen: object | undefined = mount(LoadingScreen, {
     target: appEl,
@@ -155,6 +156,7 @@ declare global {
             props: {
               title: "Stopped",
               message:
+                sessionError ||
                 "The session has ended. Refresh the page to start a new session.",
             },
           });
@@ -180,6 +182,15 @@ declare global {
     window.ipnEventHandler.Events.panicRecover,
     (ev) => {
       toast.error("Panic Recover: " + ev.detail.err);
+    },
+  );
+
+  window.ipnEventHandler.addEventListener(
+    window.ipnEventHandler.Events.error,
+    (ev) => {
+      sessionError = ev.detail.message;
+      console.error(ev.detail.message);
+      toast.error(ev.detail.message);
     },
   );
 
