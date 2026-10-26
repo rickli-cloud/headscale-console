@@ -330,6 +330,13 @@ func (i *jsIPN) run(jsCallbacks js.Value) {
 			}
 		}()
 		log.Printf("NOTIFY: %+v", n)
+		// Deliver the explanation before the state transition. Headscale
+		// v0.29.5+ keeps log upload disabled, and a node that also has the
+		// data-plane audit log capability then stops itself with WantRunning
+		// false. The UI needs the reason when it handles Stopped.
+		if n.ErrMessage != nil {
+			jsCallbacks.Call("notifyError", *n.ErrMessage)
+		}
 		if n.State != nil {
 			notifyState(*n.State)
 		}
