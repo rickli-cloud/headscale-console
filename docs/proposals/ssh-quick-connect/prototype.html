@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SSH quick connect — interaction proposal</title>
+<style>
+:root{font:16px ui-sans-serif,system-ui,sans-serif;color:#09090b;background:white;--muted:#f4f4f5;--border:#e4e4e7;--subtle:#71717a}*{box-sizing:border-box}body{margin:0}header,nav{background:var(--muted)}header{padding:18px 32px;font-size:24px;font-weight:800;letter-spacing:-.6px}header span{float:right;font-size:14px;font-weight:500;border:1px solid var(--border);border-radius:8px;padding:7px}nav{padding:8px 32px 0;display:flex;gap:24px}nav a{padding:10px 0 16px;color:var(--subtle);text-decoration:none;font-size:14px}nav a.active{color:#18181b;border-bottom:1px solid}main{max-width:1280px;margin:auto;padding:36px 32px}h1{font-size:24px;letter-spacing:-.6px;margin:0}h2{font-size:20px;letter-spacing:-.5px;border-bottom:1px solid var(--border);padding-bottom:8px;margin:36px 0 20px}p{color:var(--subtle);margin:7px 0;font-size:14px;line-height:1.6}.themes{display:flex;gap:32px}.theme{width:180px;text-align:center}.mini{height:85px;background:#ecedef;padding:12px;border:2px solid var(--border);border-radius:6px}.mini.dark{background:#020617}.mini.system{border-color:#18181b}.mini i{display:block;height:15px;background:white;margin-bottom:8px;border-radius:5px}.mini.dark i{background:#1e293b}.theme p{color:inherit}.row{display:flex;align-items:center;justify-content:space-between;max-width:680px;margin:20px 0;gap:24px}.row label{font-size:14px;font-weight:500}.switch{width:36px;height:20px;border-radius:20px;background:#18181b;border:0;padding:2px;cursor:pointer;flex-shrink:0}.switch:before{content:'';display:block;width:16px;height:16px;border-radius:50%;background:white;transform:translateX(16px)}.switch[aria-checked=false]{background:var(--border)}.switch[aria-checked=false]:before{transform:none}.choices{display:flex;gap:20px;margin-top:16px;flex-wrap:wrap;font-size:14px}.choices label{display:flex;align-items:center;gap:5px}input[type=radio]{accent-color:#18181b}input[type=text]{height:36px;border:1px solid var(--border);border-radius:6px;padding:8px 12px;font:inherit;font-size:14px;width:300px}.preview{background:var(--muted);border-radius:6px;padding:12px 16px;max-width:680px;margin-top:20px;font:13px ui-monospace,monospace}button,a{touch-action:manipulation}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #18181b;outline-offset:3px}.note{margin-top:28px;padding-top:16px;border-top:1px solid var(--border);font-size:12px}.terminal-header{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:10px 20px;font-size:14px}.terminal-header a{color:var(--subtle);text-decoration:none}.terminal-header strong{margin-right:auto}.button{border:1px solid var(--border);padding:7px 12px;border-radius:6px;background:white;font:inherit;font-size:14px;cursor:pointer}.terminal{height:calc(100vh - 60px);background:#000;color:#e4e4e7;padding:20px;font:14px/1.8 ui-monospace,SFMono-Regular,monospace;white-space:pre-wrap}.cursor{display:inline-block;background:#e4e4e7;width:8px;height:16px;vertical-align:middle}#terminal-page{display:none}#terminal-page:target{display:block}body:has(#terminal-page:target) #settings-page{display:none}@media(max-width:600px){main{padding:24px 20px}.themes{gap:12px}.theme{width:30%}.terminal-header{flex-wrap:wrap;height:auto}.terminal{height:80vh}}
+</style>
+<div id="settings-page">
+  <header>example.tailnet <span>AL</span></header>
+  <nav><a href="#">▤ Machines</a><a href="#">♙ Users</a><a class="active" href="#">⚙ Settings</a></nav>
+  <main>
+    <h1>Settings</h1><p>Manage your preferences</p>
+    <h2>Theme</h2>
+    <div class="themes"><div class="theme"><div class="mini system"><i></i><i></i><i></i></div><p>System</p></div><div class="theme"><div class="mini"><i></i><i></i><i></i></div><p>Light</p></div><div class="theme"><div class="mini dark"><i></i><i></i><i></i></div><p>Dark</p></div></div>
+    <h2>SSH</h2>
+    <div class="row"><div><label id="default-label">Use a default username</label><p>Prefill the Linux account used for SSH connections.</p></div><button class="switch" role="switch" aria-checked="true" aria-labelledby="default-label" onclick="toggle(this)"></button></div>
+    <div class="choices" role="group" aria-label="Username source">
+      <label><input type="radio" name="source" value="headscale" checked onchange="update()"> Headscale username</label>
+      <label><input type="radio" name="source" value="root" onchange="update()"> root</label>
+      <label><input type="radio" name="source" value="custom" onchange="update()"> Custom</label>
+    </div>
+    <p id="source-help">Uses your current profile's login name, before @: alex@example.com → alex.</p>
+    <div id="custom" hidden><label for="custom-name">Custom username</label><p><input type="text" id="custom-name" value="deploy" oninput="update()"></p></div>
+    <div class="row"><div><label id="auto-label">Connect automatically</label><p>Start SSH when a host and a valid default username are available.</p></div><button class="switch" role="switch" aria-checked="true" aria-labelledby="auto-label" onclick="toggle(this)"></button></div>
+    <div class="preview" id="preview">Example: alex@server → connect automatically</div>
+    <p>Preferences are saved in this browser. SSH permissions still apply.</p>
+    <p><a href="#terminal-page" class="button">Preview terminal →</a></p>
+    <p class="note">Interaction prototype · Based on src/routes/Settings.svelte, Layout.svelte and the existing monochrome theme. Example data; no network connection is made.</p>
+  </main>
+</div>
+<div id="terminal-page">
+  <div class="terminal-header"><a href="#">← Machines</a><strong id="target">alex@server</strong><span id="status">Connected</span><button class="button" onclick="document.getElementById('status').textContent='Disconnected';document.getElementById('output').textContent='Session ended. Choose Reconnect or Change user to continue.'">Disconnect</button><button class="button" onclick="document.getElementById('status').textContent='Connecting';setTimeout(()=>document.getElementById('status').textContent='Connected',600)">Reconnect</button><button class="button" onclick="document.getElementById('status').textContent='Ready';document.getElementById('output').innerHTML='server login: <span class=cursor></span>'">Change user</button></div>
+  <div class="terminal" id="output">Connecting to server as alex…
+Connected.
+
+alex@server:~$ <span class="cursor"></span></div>
+</div>
+<script>
+function toggle(el){el.setAttribute('aria-checked',el.getAttribute('aria-checked')==='true'?'false':'true');update()}
+function update(){const source=document.querySelector('input[name=source]:checked').value;const name=source==='root'?'root':source==='custom'?document.getElementById('custom-name').value.trim():'alex';document.getElementById('custom').hidden=source!=='custom';document.getElementById('source-help').textContent=source==='headscale'?"Uses your current profile's login name, before @: alex@example.com → alex.":source==='root'?'Requests the root account. The server must explicitly allow it.':'Enter the Linux account to use on the destination.';const switches=document.querySelectorAll('.switch');const enabled=switches[0].getAttribute('aria-checked')==='true';const auto=switches[1].getAttribute('aria-checked')==='true';document.getElementById('preview').textContent=enabled&&name?`Example: ${name}@server → ${auto?'connect automatically':'confirm username'}`:'Example: server → enter username';document.getElementById('target').textContent=`${name}@server`;}
+</script>
+</html>
