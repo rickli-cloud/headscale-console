@@ -15,9 +15,27 @@ async function calls(page: Page) {
         username: string;
         input: string[];
         closed: boolean;
+        connected: boolean;
+        ended: boolean;
       }[];
     }).sshCalls
   );
+}
+async function terminalReady(page: Page) {
+  await page.getByRole("region", { name: "SSH terminal", exact: true })
+    .waitFor();
+  await page.locator(".xterm-helper-textarea").focus();
+}
+async function connected(page: Page, index = 0) {
+  await expect.poll(async () => (await calls(page))[index]?.connected).toBe(
+    true,
+  );
+}
+async function endSession(page: Page, index = 0) {
+  await page.locator(".xterm-helper-textarea").focus();
+  await page.keyboard.type("exit");
+  await page.keyboard.press("Enter");
+  await expect.poll(async () => (await calls(page))[index]?.ended).toBe(true);
 }
 const enabled = {
   "ssh-default-username-enabled": "true",
@@ -122,17 +140,16 @@ for (
       "ssh-custom-username": " deploy ",
     });
     await page.goto("/tests/browser.html#/connect?proto=ssh&host=server");
-    await expect(page.getByRole("status")).toHaveText("Connected");
+    await connected(page);
     expect(await calls(page)).toMatchObject([{ host: "server", username }]);
-    await page.getByRole("button", { name: "Disconnect", exact: true }).click();
-    await expect(page.getByRole("status")).toHaveText("Disconnected");
+    await expect(page.getByRole("button")).toHaveCount(0);
+    await endSession(page);
     await page.waitForTimeout(100);
     expect(await calls(page)).toHaveLength(1);
-    await page.getByRole("button", { name: "Change user", exact: true })
-      .click();
+    await page.keyboard.press("Enter");
     await page.keyboard.type("other");
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("status")).toHaveText("Connected");
+    await connected(page, 1);
     expect((await calls(page))[1].username).toBe("other");
     await page.keyboard.type("echo test");
     expect((await calls(page))[1].input.join("")).toBe("echo test");
@@ -141,11 +158,11 @@ for (
 
 test("known host skips confirmation with manual defaults", async ({ page }) => {
   await page.goto("/tests/browser.html#/connect?proto=ssh&host=server");
-  await expect(page.getByRole("status")).toHaveText("Ready");
+  await terminalReady(page);
   await page.locator(".xterm-helper-textarea").focus();
   await page.keyboard.type("manual");
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("status")).toHaveText("Connected");
+  await connected(page);
   expect(await calls(page)).toMatchObject([{
     host: "server",
     username: "manual",
@@ -155,11 +172,11 @@ test("known host skips confirmation with manual defaults", async ({ page }) => {
 test("prefilled username waits for Enter when auto-connect is off", async ({ page }) => {
   await preferences(page, { ...enabled, "ssh-auto-connect": "false" });
   await page.goto("/tests/browser.html#/connect?proto=ssh&host=server");
-  await expect(page.getByRole("status")).toHaveText("Ready");
+  await terminalReady(page);
   expect(await calls(page)).toHaveLength(0);
   await page.locator(".xterm-helper-textarea").focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("status")).toHaveText("Connected");
+  await connected(page);
   expect((await calls(page))[0].username).toBe("alex");
 });
 
@@ -168,48 +185,60 @@ test("invalid profile login falls back to manual input without guessing", async 
   await page.goto(
     "/tests/browser.html?login=Alex%20Example#/connect?proto=ssh&host=server",
   );
-  await expect(page.getByRole("status")).toHaveText("Ready");
+  await terminalReady(page);
   expect(await calls(page)).toHaveLength(0);
 });
 
 test("missing host is prompted before an automatic connection", async ({ page }) => {
   await preferences(page, enabled);
   await page.goto("/tests/browser.html#/connect?proto=ssh");
-  await expect(page.getByRole("status")).toHaveText("Ready");
+  await terminalReady(page);
   expect(await calls(page)).toHaveLength(0);
   await page.locator(".xterm-helper-textarea").focus();
   await page.keyboard.type("server");
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("status")).toHaveText("Connected");
+  await connected(page);
 });
 
-test("failure does not retry; reconnect is explicit and input is not duplicated", async ({ page }) => {
+test("failure waits for a key and manual username without automatic retry", async ({ page }) => {
   await preferences(page, enabled);
   await page.goto("/tests/browser.html?fail#/connect?proto=ssh&host=server");
-  await expect(page.getByRole("status")).toHaveText("Failed");
+  await terminalReady(page);
+  await expect.poll(async () => (await calls(page))[0]?.ended).toBe(true);
   await page.waitForTimeout(100);
   expect(await calls(page)).toHaveLength(1);
-  await page.getByRole("button", { name: "Reconnect", exact: true }).click();
-  await expect.poll(async () => (await calls(page)).length).toBe(2);
-  await expect(page.getByRole("status")).toHaveText("Failed");
+  await page.keyboard.press("Enter");
+  expect(await calls(page)).toHaveLength(1);
+  await page.keyboard.type("other");
+  await page.keyboard.press("Enter");
+  await expect.poll(async () => (await calls(page))[1]?.ended).toBe(true);
+  expect((await calls(page))[1].username).toBe("other");
 });
 
-test("reconnect sends each keystroke once and navigation closes the session", async ({ page }) => {
+test("manual retry sends input once and browser navigation closes the session", async ({ page }) => {
   await preferences(page, enabled);
-  await page.goto("/tests/browser.html#/connect?proto=ssh&host=server");
-  await expect(page.getByRole("status")).toHaveText("Connected");
-  await page.getByRole("button", { name: "Disconnect", exact: true }).click();
-  await page.getByRole("button", { name: "Reconnect", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText("Connected");
+  await page.goto("/tests/browser.html#/settings");
+  await page.getByRole("combobox", { name: "Username", exact: true }).waitFor();
+  await page.evaluate(() =>
+    window.appRouter.goto(
+      new URL("#/connect?proto=ssh&host=server", location.href),
+    )
+  );
+  await connected(page);
+  await endSession(page);
+  await page.keyboard.press("Enter");
+  await page.keyboard.type("alex");
+  await page.keyboard.press("Enter");
+  await connected(page, 1);
   await page.keyboard.type("echo once");
   expect((await calls(page))[1].input.join("")).toBe("echo once");
-  await page.getByRole("link", { name: "← Machines" }).click();
+  await page.goBack();
   await expect.poll(async () => (await calls(page))[1].closed).toBe(true);
 });
 
 test("multi-line paste cannot submit a username or send input to a shell", async ({ page }) => {
   await page.goto("/tests/browser.html#/connect?proto=ssh&host=server");
-  await expect(page.getByRole("status")).toHaveText("Ready");
+  await terminalReady(page);
   await page.locator(".xterm-helper-textarea").focus();
   await page.locator(".xterm-helper-textarea").evaluate((element) => {
     const data = new DataTransfer();
@@ -222,6 +251,6 @@ test("multi-line paste cannot submit a username or send input to a shell", async
   });
   expect(await calls(page)).toHaveLength(0);
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("status")).toHaveText("Connected");
+  await connected(page);
   expect(await calls(page)).toMatchObject([{ username: "alex", input: [] }]);
 });

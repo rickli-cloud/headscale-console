@@ -18,9 +18,6 @@ flowchart TD
   K -->|Valid input and Enter| L
   L --> N{Connection outcome}
   N -->|Connected| O[Interactive terminal]
-  N -->|Failed| P[Show error and recovery controls]
-  O -->|Disconnect or exit| Q[Disconnected]
-  P --> R{User action}
-  Q --> R
-  R -->|Reconnect| L
-  R -->|Change user| M
+  N -->|Failed| P[Press any key to continue]
+  O -->|Exit or session end| P
+  P -->|Explicit key press| M

@@ -92,9 +92,10 @@ invalid defaults require manual input; the client never tries another account.
 A supplied host skips the host prompt. With automatic connection disabled, a
 valid default is prefilled for confirmation with Enter. With automatic connection
 enabled, a known host and valid default start one SSH connection. A missing host
-is requested first. Failed/ended sessions offer **Reconnect** and **Change user**;
-they never reconnect automatically. **Disconnect** is available after connection.
-The destination and connection status remain visible above the terminal.
+is requested first. After a session fails or ends, the existing **Press any key
+to continue** interaction returns to manual username entry for the same host.
+There is no automatic retry or account fallback. The terminal keeps its existing
+full-screen layout; this feature adds no toolbar or session-management controls.
 
 Preferences are browser-local and contain no passwords or private keys. Existing
 Tailscale SSH authentication and authorization remain in effect. VNC/RDP are

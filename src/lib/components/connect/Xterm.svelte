@@ -5,7 +5,6 @@
   import { onMount } from "svelte";
   import { get } from "svelte/store";
 
-  import { Button } from "$lib/components/ui/button";
   import { userSettings } from "$lib/store/settings";
   import { defaultSSHUsername, sshPreferences, validSSHHostname, validSSHUsername } from "$lib/utils/ssh";
 
@@ -24,6 +23,7 @@
   let onDataHook: ((data: string) => void) | undefined;
   let generation = 0;
   let disposed = false;
+  let awaitingContinue = false;
 
   const terminal = new Terminal({ cursorBlink: true, allowProposedApi: true, ...terminalOptions });
   const fitAddon = new FitAddon();
@@ -43,6 +43,15 @@
     terminal.focus();
 
     const inputListener = terminal.onData((data) => {
+      if (awaitingContinue) {
+        awaitingContinue = false;
+        generation++;
+        username = "";
+        terminal.clear();
+        terminal.reset();
+        showPrompt("username");
+        return;
+      }
       if (!prompt) onDataHook?.(data);
       else handlePromptInput(data);
     });
@@ -171,28 +180,13 @@
         onDataHook = undefined;
         session = undefined;
         if (status !== "Failed") status = "Disconnected";
-        terminal.writeln("\r\nSession ended. Choose Reconnect or Change user to continue.");
+        awaitingContinue = true;
+        terminal.write("\r\nPress any key to continue... ");
       },
       timeoutSeconds: 30,
     });
     if (active() && (status === "Connecting" || status === "Connected")) session = nextSession;
     terminal.focus();
-  }
-
-  function disconnect() {
-    generation++;
-    onDataHook = undefined;
-    session?.close();
-    session = undefined;
-    status = "Disconnected";
-    terminal.writeln("\r\nDisconnected. Choose Reconnect or Change user to continue.");
-  }
-
-  function changeUser() {
-    generation++;
-    username = "";
-    terminal.writeln("");
-    showPrompt(hostname ? "username" : "host");
   }
 
   const beforeUnloadHandler = (event: Event) => {
@@ -202,18 +196,4 @@
   };
 </script>
 
-<div class="flex h-full flex-col">
-  <div class="flex flex-wrap items-center gap-3 border-b bg-background px-4 py-2 text-sm">
-    <Button href="#/" variant="ghost" size="sm" onclick={window.appRouter.anchorOnclickHandler()}>← Machines</Button>
-    <strong class="mr-auto break-all">{username ? `${username}@` : ""}{hostname || "SSH"}</strong>
-    <span aria-live="polite" role="status">{status}</span>
-    {#if status === "Connected"}
-      <Button variant="outline" size="sm" onclick={disconnect}>Disconnect</Button>
-    {/if}
-    {#if status === "Disconnected" || status === "Failed"}
-      <Button variant="outline" size="sm" onclick={login}>Reconnect</Button>
-    {/if}
-    <Button variant="outline" size="sm" disabled={status === "Connecting" || status === "Connected"} onclick={changeUser}>Change user</Button>
-  </div>
-  <div bind:this={el} class="min-h-0 w-full flex-1 bg-black"></div>
-</div>
+<div bind:this={el} class="h-full w-full" role="region" aria-label="SSH terminal"></div>
