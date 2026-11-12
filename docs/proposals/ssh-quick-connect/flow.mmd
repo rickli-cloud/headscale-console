@@ -1,0 +1,23 @@
+flowchart TD
+  A[Open SSH connection] --> B{Host supplied?}
+  B -->|No| C[Enter and confirm host]
+  B -->|Yes| D{Username mode}
+  C --> D
+  D -->|Ask every time| M[Enter username manually]
+  D -->|Headscale| F[Current profile login name before first @]
+  D -->|root| G[Use root]
+  D -->|Custom| H[Trim custom username]
+  F --> I{Valid Linux username?}
+  G --> I
+  H --> I
+  I -->|No| M
+  I -->|Yes| J{Automatic connection enabled?}
+  J -->|No| K[Prefill username and wait for Enter]
+  J -->|Yes| L[Start one SSH connection]
+  M -->|Valid input and Enter| L
+  K -->|Valid input and Enter| L
+  L --> N{Connection outcome}
+  N -->|Connected| O[Interactive terminal]
+  N -->|Failed| P[Press any key to continue]
+  O -->|Exit or session end| P
+  P -->|Explicit key press| M
