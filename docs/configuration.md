@@ -50,3 +50,48 @@ On startup the app tries to load `./config.json`.
 **Type**: `String[]`
 
 **Default**: `[]`
+
+---
+
+### defaults
+
+Optional initial browser preferences. Settings → SSH offers two independent
+switches, **Use a default username** and **Connect automatically**, both off by
+default. Local browser choices override deployment defaults, including explicit
+`"false"`. Preferences apply to new connections, not active sessions.
+
+```json
+{
+  "defaults": {
+    "ssh-default-username-enabled": "true",
+    "ssh-username-source": "headscale",
+    "ssh-custom-username": "",
+    "ssh-auto-connect": "false"
+  }
+}
+```
+
+All preference values are strings. Username sources:
+
+- `headscale`: the current browser profile's login name, before the first `@`.
+  For example, `alex@example.com` and `alex@` both suggest `alex`. This is an
+  explicit convenience mapping, not a guarantee that the account exists. The
+  destination owner and display name are never used.
+- `root`: request the literal `root` account. The destination's existing SSH
+  policy must allow it; choosing it does not grant additional permissions.
+- `custom`: use the trimmed `ssh-custom-username` value.
+
+Common Linux usernames up to 64 characters are accepted: an ASCII letter or `_`
+first, then letters, digits, `_`, `.`, `-`, and an optional final `$`. Missing or
+invalid defaults require manual input; the client never tries another account.
+
+A supplied host skips the host prompt. With automatic connection disabled, a
+valid default is prefilled for confirmation with Enter. With automatic connection
+enabled, a known host and valid default start one SSH connection. A missing host
+is requested first. Failed/ended sessions offer **Reconnect** and **Change user**;
+they never reconnect automatically. **Disconnect** is available after connection.
+The destination and connection status remain visible above the terminal.
+
+Preferences are browser-local and contain no passwords or private keys. Existing
+Tailscale SSH authentication and authorization remain in effect. VNC/RDP are
+unaffected.

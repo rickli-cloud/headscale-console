@@ -9,10 +9,13 @@
     "build:gowasm": "GOOS=js GOARCH=wasm go build -trimpath -ldflags \"-s -w\" -o ./src/lib/api/tsconnect/pkg/client.wasm ./wasm/wasm.go && wasm-opt --enable-bulk-memory -Oz ./src/lib/api/tsconnect/pkg/client.wasm -o ./src/lib/api/tsconnect/pkg/client.wasm",
     "build:rustwasm": "cd wasm && wasm-pack build --out-name ironrdp --target web",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json"
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
+    "test": "deno test --allow-env=NODE_ENV tests/ssh_test.ts",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@lucide/svelte": "^0.562.0",
+    "@playwright/test": "1.63.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",
     "@tailwindcss/vite": "^4.1.18",
     "@tsconfig/svelte": "^5.0.4",

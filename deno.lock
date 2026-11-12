@@ -44,7 +44,8 @@
     "npm:workbox-precaching@^7.4.0": "7.4.0",
     "npm:workbox-routing@^7.4.0": "7.4.0",
     "npm:workbox-window@^7.4.0": "7.4.0",
-    "npm:yaml@^2.8.0": "2.8.0"
+    "npm:yaml@^2.8.0": "2.8.0",
+    "npm:@playwright/test@1.63.0": "1.63.0"
   },
   "npm": {
     "@ampproject/remapping@2.3.0": {
@@ -3455,6 +3456,27 @@
     },
     "zod@3.25.76": {
       "integrity": "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="
+    },
+    "@playwright/test@1.63.0": {
+      "integrity": "sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==",
+      "dependencies": [
+        "playwright"
+      ],
+      "bin": true,
+      "tarball": "https://registry.npmmirror.com/@playwright/test/-/test-1.63.0.tgz"
+    },
+    "playwright-core@1.63.0": {
+      "integrity": "sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==",
+      "bin": true,
+      "tarball": "https://registry.npmmirror.com/playwright-core/-/playwright-core-1.63.0.tgz"
+    },
+    "playwright@1.63.0": {
+      "integrity": "sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==",
+      "dependencies": [
+        "playwright-core"
+      ],
+      "bin": true,
+      "tarball": "https://registry.npmmirror.com/playwright/-/playwright-1.63.0.tgz"
     }
   },
   "workspace": {
@@ -3462,6 +3484,7 @@
       "dependencies": [
         "npm:@lucide/svelte@0.562",
         "npm:@novnc/novnc@1.5.0",
+        "npm:@playwright/test@1.63.0",
         "npm:@sveltejs/vite-plugin-svelte@^5.0.3",
         "npm:@tailwindcss/vite@^4.1.18",
         "npm:@tsconfig/svelte@^5.0.4",

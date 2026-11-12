@@ -36,3 +36,7 @@ config.json
 # Added by cargo
 
 /target
+
+# Browser test output
+/test-results/
+/playwright-report/
