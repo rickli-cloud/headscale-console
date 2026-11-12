@@ -55,10 +55,14 @@ On startup the app tries to load `./config.json`.
 
 ### defaults
 
-Optional initial browser preferences. Settings → SSH offers two independent
-switches, **Use a default username** and **Connect automatically**, both off by
-default. Local browser choices override deployment defaults, including explicit
-`"false"`. Preferences apply to new connections, not active sessions.
+Optional initial browser preferences. Settings → SSH offers a **Username** selector
+and a **Connect automatically** switch. **Ask every time** is the default username
+mode; selecting it also turns automatic connection off. Choosing Headscale, root
+or Custom enables a default username, with the resolved Headscale account shown
+in the selector and the custom field displayed only when needed. Local browser
+choices override deployment defaults, including explicit `"false"`. Preferences
+apply to new connections, not active sessions. Existing preference keys remain
+compatible; the separate username-enabled switch is no longer displayed.
 
 ```json
 {

@@ -24,27 +24,89 @@ const enabled = {
   "ssh-auto-connect": "true",
 };
 
-test("settings persist three username sources and an explicit opt-out", async ({ page }) => {
+test("settings persist username choices and an explicit opt-out", async ({ page }) => {
   await page.goto("/tests/browser.html?defaults#/settings");
-  await expect(page.getByRole("switch", { name: "Use a default username" }))
+  const username = page.getByRole("combobox", {
+    name: "Username",
+    exact: true,
+  });
+  await expect(username).toHaveValue("headscale");
+  await expect(username.locator("option:checked")).toHaveText(
+    "Headscale username (alex)",
+  );
+  await username.selectOption("root");
+  await expect(page.getByLabel("Custom username", { exact: true })).toHaveCount(
+    0,
+  );
+  await username.selectOption("custom");
+  await expect(page.getByRole("switch", { name: "Connect automatically" }))
+    .toBeDisabled();
+  await expect(page.getByRole("switch", { name: "Connect automatically" })).not
     .toBeChecked();
-  await page.getByRole("radio", { name: "root", exact: true }).check();
-  await expect(page.getByText("root@server → connect automatically"))
-    .toBeVisible();
-  await page.getByRole("radio", { name: "Custom", exact: true }).check();
   await page.getByLabel("Custom username", { exact: true }).fill("deploy");
-  await expect(page.getByText("deploy@server → connect automatically"))
-    .toBeVisible();
   await page.getByRole("switch", { name: "Connect automatically" }).uncheck();
   await page.reload();
   await expect(page.getByRole("switch", { name: "Connect automatically" })).not
     .toBeChecked();
+  await expect(username).toHaveValue("custom");
   await expect(page.getByLabel("Custom username", { exact: true })).toHaveValue(
     "deploy",
   );
-  await page.getByRole("radio", { name: "Headscale username", exact: true })
-    .check();
-  await expect(page.getByText("alex@server → confirm username")).toBeVisible();
+  await username.selectOption("headscale");
+  await expect(username.locator("option:checked")).toHaveText(
+    "Headscale username (alex)",
+  );
+});
+
+test("ask every time turns automatic connection off and remains off after reload", async ({ page }) => {
+  await page.goto("/tests/browser.html?defaults#/settings");
+  const username = page.getByRole("combobox", {
+    name: "Username",
+    exact: true,
+  });
+  const autoConnect = page.getByRole("switch", {
+    name: "Connect automatically",
+  });
+  await expect(autoConnect).toBeChecked();
+  await username.selectOption("ask");
+  await expect(autoConnect).not.toBeChecked();
+  await expect(autoConnect).toBeDisabled();
+  await page.reload();
+  await expect(username).toHaveValue("ask");
+  await username.selectOption("root");
+  await expect(autoConnect).toBeEnabled();
+  await expect(autoConnect).not.toBeChecked();
+});
+
+test("custom validation is contextual and the compact form works on mobile and keyboard", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/tests/browser.html#/settings");
+  const username = page.getByRole("combobox", {
+    name: "Username",
+    exact: true,
+  });
+  await expect(username).toHaveValue("ask");
+  await username.focus();
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+  await expect(username).toHaveValue("headscale");
+  await username.selectOption("custom");
+  const custom = page.getByLabel("Custom username", { exact: true });
+  await expect(page.getByText("Enter a valid Linux username.")).toHaveCount(0);
+  await custom.fill("bad name");
+  await expect(custom).toHaveAttribute("aria-invalid", "true");
+  await expect(custom).toHaveAccessibleDescription(
+    "Enter a valid Linux username.",
+  );
+  await expect(page.getByText("Enter a valid Linux username.")).toBeVisible();
+  await custom.fill("deploy");
+  await expect(custom).toHaveAttribute("aria-invalid", "false");
+  await expect(page.getByText("Enter a valid Linux username.")).toHaveCount(0);
+  expect(
+    await page.evaluate(() =>
+      document.documentElement.scrollWidth > innerWidth
+    ),
+  ).toBe(false);
 });
 
 for (

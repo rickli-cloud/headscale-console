@@ -21,9 +21,25 @@
 
   let theme = $state<"dark" | "light" | "system">($userPrefersMode);
   const ssh = $derived(sshPreferences($userSettings));
+  let customUsernameTouched = $state(false);
+  const usernameMode = $derived(ssh.enabled ? ssh.source ?? "ask" : "ask");
+  const profileUsername = $derived(defaultSSHUsername(
+    { ...ssh, enabled: true, source: "headscale" },
+    window.ipnProfiles?.currentProfile?.Config.UserProfile.LoginName,
+  ));
   const sshUsername = $derived(defaultSSHUsername(
     ssh, window.ipnProfiles?.currentProfile?.Config.UserProfile.LoginName,
   ));
+
+  function setUsernameMode(mode: string) {
+    customUsernameTouched = false;
+    userSettings.update((settings) => ({
+      ...settings,
+      [UserSettingKeys.SSHDefaultUsernameEnabled]: String(mode !== "ask"),
+      [UserSettingKeys.SSHUsernameSource]: mode === "ask" ? ssh.source ?? "headscale" : mode,
+      ...(mode === "ask" ? { [UserSettingKeys.SSHAutoConnect]: "false" } : {}),
+    }));
+  }
 
   function setSSHSetting(key: UserSettingKeys, value: string) {
     userSettings.update((settings) => ({ ...settings, [key]: value }));
@@ -168,61 +184,57 @@
       SSH
     </h2>
 
-    <div class="max-w-2xl space-y-6">
-      <div class="flex items-center justify-between gap-6">
-        <div class="space-y-1.5">
-          <Label for="ssh-default-enabled">Use a default username</Label>
-          <p class="text-sm text-muted-foreground">Prefill the Linux account used for SSH connections.</p>
-        </div>
-        <Switch id="ssh-default-enabled" checked={ssh.enabled}
-          onCheckedChange={(value) => setSSHSetting(UserSettingKeys.SSHDefaultUsernameEnabled, String(value))} />
+    <div class="max-w-2xl space-y-5">
+      <div class="grid items-center gap-3 sm:grid-cols-[1fr_20rem]">
+        <Label for="ssh-username-mode">Username</Label>
+        <select
+          id="ssh-username-mode"
+          value={usernameMode}
+          onchange={(event) => setUsernameMode(event.currentTarget.value)}
+          aria-describedby={usernameMode === "headscale" && !profileUsername ? "ssh-profile-error" : undefined}
+          class="border-input bg-background text-foreground focus-visible:ring-ring h-9 w-full min-w-0 rounded-md border px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1"
+        >
+          <option value="ask">Ask every time</option>
+          <option value="headscale">Headscale username{profileUsername ? ` (${profileUsername})` : ""}</option>
+          <option value="root">root</option>
+          <option value="custom">Custom</option>
+        </select>
       </div>
 
-      <RadioGroup.Root value={ssh.source} disabled={!ssh.enabled} aria-label="SSH username source"
-        class="flex flex-wrap gap-6"
-        onValueChange={(value) => setSSHSetting(UserSettingKeys.SSHUsernameSource, value)}>
-        {#each [["headscale", "Headscale username"], ["root", "root"], ["custom", "Custom"]] as [value, label]}
-          <div class="flex items-center gap-2">
-            <RadioGroup.Item id={`ssh-source-${value}`} {value} />
-            <Label for={`ssh-source-${value}`}>{label}</Label>
+      {#if usernameMode === "custom"}
+        {@const invalidUsername = !sshUsername && (customUsernameTouched || ssh.customUsername.length > 0)}
+        <div class="grid items-start gap-3 sm:grid-cols-[1fr_20rem]">
+          <Label for="ssh-custom-username" class="sm:pt-2.5">Custom username</Label>
+          <div class="space-y-2">
+            <Input
+              id="ssh-custom-username"
+              value={ssh.customUsername}
+              autocomplete="off"
+              spellcheck="false"
+              maxlength={64}
+              aria-invalid={invalidUsername}
+              aria-describedby={invalidUsername ? "ssh-username-error" : undefined}
+              onblur={() => customUsernameTouched = true}
+              oninput={(event) => setSSHSetting(UserSettingKeys.SSHCustomUsername, event.currentTarget.value)}
+            />
+            {#if invalidUsername}
+              <p id="ssh-username-error" class="text-sm text-destructive" role="status">Enter a valid Linux username.</p>
+            {/if}
           </div>
-        {/each}
-      </RadioGroup.Root>
-
-      {#if ssh.source === "headscale"}
-        <p class="text-sm text-muted-foreground">Uses your current profile's login name, before @: alex@example.com → alex.</p>
-      {:else if ssh.source === "root"}
-        <p class="text-sm text-muted-foreground">Requests the root account. The server must explicitly allow it.</p>
-      {:else}
-        <div class="space-y-2">
-          <Label for="ssh-custom-username">Custom username</Label>
-          <Input id="ssh-custom-username" class="max-w-sm" value={ssh.customUsername} disabled={!ssh.enabled}
-            autocomplete="off" spellcheck="false" maxlength={64}
-            oninput={(event) => setSSHSetting(UserSettingKeys.SSHCustomUsername, event.currentTarget.value)} />
         </div>
+      {:else if usernameMode === "headscale" && !profileUsername}
+        <p id="ssh-profile-error" class="text-sm text-muted-foreground" role="status">No usable username in this profile.</p>
       {/if}
 
-      {#if ssh.enabled && !sshUsername}
-        <p class="text-sm text-muted-foreground" role="status">No valid default username. Enter a Linux username when connecting, or choose another source.</p>
-      {/if}
-
-      <div class="flex items-center justify-between gap-6">
-        <div class="space-y-1.5">
-          <Label for="ssh-auto-connect">Connect automatically</Label>
-          <p class="text-sm text-muted-foreground">Start SSH when a host and a valid default username are available.</p>
-        </div>
-        <Switch id="ssh-auto-connect" checked={ssh.autoConnect} disabled={!ssh.enabled}
-          onCheckedChange={(value) => setSSHSetting(UserSettingKeys.SSHAutoConnect, String(value))} />
+      <div class="flex items-center justify-between gap-6 border-t pt-5">
+        <Label for="ssh-auto-connect">Connect automatically</Label>
+        <Switch
+          id="ssh-auto-connect"
+          checked={Boolean(sshUsername) && ssh.autoConnect}
+          disabled={!sshUsername}
+          onCheckedChange={(value) => setSSHSetting(UserSettingKeys.SSHAutoConnect, String(value))}
+        />
       </div>
-
-      <p class="rounded-md bg-muted px-4 py-3 font-mono text-sm" aria-live="polite">
-        {#if sshUsername}
-          {sshUsername}@server → {ssh.autoConnect ? "connect automatically" : "confirm username"}
-        {:else}
-          server → enter username
-        {/if}
-      </p>
-      <p class="text-sm text-muted-foreground">Preferences are saved in this browser and apply to new connections. SSH permissions still apply.</p>
     </div>
   </section>
 

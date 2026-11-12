@@ -1,13 +1,12 @@
 flowchart TD
   A[Open SSH connection] --> B{Host supplied?}
   B -->|No| C[Enter and confirm host]
-  B -->|Yes| D{Default username enabled?}
+  B -->|Yes| D{Username mode}
   C --> D
-  D -->|No| M[Enter username manually]
-  D -->|Yes| E{Username source}
-  E -->|Headscale| F[Current profile login name before first @]
-  E -->|root| G[Use root]
-  E -->|Custom| H[Trim custom username]
+  D -->|Ask every time| M[Enter username manually]
+  D -->|Headscale| F[Current profile login name before first @]
+  D -->|root| G[Use root]
+  D -->|Custom| H[Trim custom username]
   F --> I{Valid Linux username?}
   G --> I
   H --> I
